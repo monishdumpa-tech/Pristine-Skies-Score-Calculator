@@ -1,10 +1,8 @@
-# Pristine Skies Score Calculator
+# Pristine Skies
 
-A polished local website for comparing aircraft efficiency with tournament-style scoring formulas.
+A premium aerospace sustainability analysis platform for comparing aircraft using raw specifications, automatic derived metrics, composite efficiency scoring, visualizations, and smart performance insights.
 
 ## Run Locally
-
-From this folder:
 
 ```bash
 node server.js
@@ -16,15 +14,18 @@ Then open:
 http://localhost:4173
 ```
 
-You can also open `index.html` directly in a browser. The app stores aircraft in local storage, so entries stay available after refresh.
+## Vercel
 
-## Included Features
+Vercel runs:
 
-- Multiple aircraft add, edit, delete, and ranking
-- Sticky conversion chart
-- Derived metrics and tournament-style formula scoring
-- Local storage persistence
-- CSV and JSON export
-- Sample aircraft estimates
-- Responsive dark eco-aerospace UI
-- Canvas charts with no external dependencies
+```bash
+npm run build
+```
+
+The build copies the static site and assets into `dist`, which is configured as the deployment output directory.
+
+## Core Workflow
+
+1. Enter raw aircraft specifications.
+2. Add the aircraft.
+3. Review calculated metrics, rankings, charts, insights, and the Final Pristine Skies Score.

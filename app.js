@@ -1,284 +1,104 @@
 "use strict";
 
-const STORAGE_KEY = "pristine-skies-aircraft-v1";
-const EXPONENTIAL_MAX = Math.exp(0.3 * 10);
-const GUESSING_MIN = -20;
-const GUESSING_MAX = 6;
-
-const conversions = [
-  ["Fuel to CO₂", "1 gallon jet fuel = 9.57 kg CO₂", "fuel"],
-  ["Mass", "1 kg = 2.20462 lb", "mass"],
-  ["Distance", "1 mile = 1.60934 km", "distance"],
-  ["Aviation Distance", "1 nautical mile = 1.15078 miles", "distance"],
-  ["Volume", "1 gallon = 3.78541 liters", "fuel"],
-  ["Volume", "1 liter = 0.264172 gallons", "fuel"],
-  ["Area", "1 square meter = 10.7639 square feet", "area"],
-  ["Mass", "1 pound = 0.453592 kg", "mass"],
-  ["Passenger-Mile", "1 passenger-mile = passenger × miles", "passenger"],
-  ["Wing Loading", "Wing loading = aircraft weight / wing area", "wing"],
-  ["Fuel per Passenger", "Fuel per passenger = total fuel burn / number of passengers", "fuel"],
-  ["Fuel per Passenger-Mile", "Fuel per passenger-mile = total fuel burn / passenger-miles", "fuel"]
-];
-
-const sampleAircraft = [
-  {
-    id: "sample-a320",
-    sample: true,
-    aircraftName: "Airbus A320",
-    glideRatio: 17,
-    fuelBurn: 11.2,
-    range: 3900,
-    passengerCapacity: 180,
-    aircraftWeight: 169750,
-    wingArea: 1320,
-    cruiseSpeed: 515,
-    co2Output: 107,
-    difficultyRating: 6,
-    validDesign: "yes",
-    wrongDesignCount: 1
-  },
-  {
-    id: "sample-737-800",
-    sample: true,
-    aircraftName: "Boeing 737-800",
-    glideRatio: 16.5,
-    fuelBurn: 11.6,
-    range: 3585,
-    passengerCapacity: 189,
-    aircraftWeight: 174200,
-    wingArea: 1341,
-    cruiseSpeed: 514,
-    co2Output: 111,
-    difficultyRating: 6.2,
-    validDesign: "yes",
-    wrongDesignCount: 1
-  },
-  {
-    id: "sample-787-9",
-    sample: true,
-    aircraftName: "Boeing 787-9",
-    glideRatio: 20,
-    fuelBurn: 9.4,
-    range: 8786,
-    passengerCapacity: 290,
-    aircraftWeight: 560000,
-    wingArea: 3770,
-    cruiseSpeed: 561,
-    co2Output: 90,
-    difficultyRating: 8.5,
-    validDesign: "yes",
-    wrongDesignCount: 0
-  },
-  {
-    id: "sample-a350-900",
-    sample: true,
-    aircraftName: "Airbus A350-900",
-    glideRatio: 21,
-    fuelBurn: 9.1,
-    range: 9320,
-    passengerCapacity: 325,
-    aircraftWeight: 617300,
-    wingArea: 4768,
-    cruiseSpeed: 561,
-    co2Output: 86,
-    difficultyRating: 8.8,
-    validDesign: "yes",
-    wrongDesignCount: 0
-  },
-  {
-    id: "sample-a220-300",
-    sample: true,
-    aircraftName: "Airbus A220-300",
-    glideRatio: 18.5,
-    fuelBurn: 8.9,
-    range: 3900,
-    passengerCapacity: 145,
-    aircraftWeight: 156000,
-    wingArea: 1209,
-    cruiseSpeed: 541,
-    co2Output: 82,
-    difficultyRating: 7.4,
-    validDesign: "yes",
-    wrongDesignCount: 0
-  }
-];
-
-const formulaCards = [
-  {
-    title: "Wing Loading",
-    formula: "wingLoading = aircraftWeight / wingArea",
-    measures: "How much aircraft weight each square foot of wing must support.",
-    matters: "Lower wing loading often supports better low-speed handling and efficient lift.",
-    affects: "It feeds the sustainability index and composite score. Lower wing loading improves the wing-loading portion of the composite score.",
-    direction: "Lower is usually better for this model."
-  },
-  {
-    title: "Sustainability Index",
-    formula: "sustainabilityIndex = (glideRatio × passengerCapacity × range) / (fuelBurn × co2Output × wingLoading)",
-    measures: "A combined efficiency value that rewards lift performance, passenger movement, and range while penalizing fuel burn, CO₂, and wing loading.",
-    matters: "It acts like the core skill signal for the aircraft before tournament-style scoring is applied.",
-    affects: "It drives the logistic score and power score.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Difficulty Weighted Score",
-    formula: "difficultyWeightedScore = correctValue × difficultyRating²",
-    measures: "How much credit a valid design earns for attempting a difficult engineering target.",
-    matters: "Squaring difficulty gives harder valid designs a larger reward.",
-    affects: "This score is normalized to 0-100 and contributes 20% of the final score.",
-    direction: "Higher is better, but invalid designs receive 0."
-  },
-  {
-    title: "Exponential Difficulty Score",
-    formula: "exponentialScore = correctValue × e^(0.3 × difficultyRating)",
-    measures: "A steeper reward curve for valid designs as difficulty increases.",
-    matters: "It separates very difficult valid designs more strongly than a linear score.",
-    affects: "This score is normalized to 0-100 and contributes 15% of the final score.",
-    direction: "Higher is better, but invalid designs receive 0."
-  },
-  {
-    title: "Guessing Penalty Score",
-    formula: "guessingPenaltyScore = 6 × correctValue - 2 × wrongDesignCount",
-    measures: "A validity bonus with penalties for failed or inefficient design features.",
-    matters: "It discourages adding many weak design claims just to chase points.",
-    affects: "This score is normalized to 0-100 and contributes 10% of the final score.",
-    direction: "Higher is better. More failed features lower the score."
-  },
-  {
-    title: "Logistic Design Quality Score",
-    formula: "normalizedSkill = skill / (skill + 100); logisticScoreFinal = 100 / (1 + e^-((normalizedSkill × 10 - difficultyRating)))",
-    measures: "How well the sustainability index clears the selected design difficulty.",
-    matters: "The S-curve makes the score change smoothly, then flatten near the extremes.",
-    affects: "It contributes 15% of the final score.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Power Score",
-    formula: "powerScore = 100 × (sustainabilityIndex / bestSustainabilityIndex)³",
-    measures: "How close the aircraft is to the best sustainability index in the dataset.",
-    matters: "Cubing the ratio makes top sustainability designs stand out dramatically.",
-    affects: "It is shown as a supporting tournament metric and helps explain separation.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Composite Aerospace Score",
-    formula: "100 × [0.30G_n² + 0.20R_n + 0.15P_n + 0.15(1-F_n)² + 0.10(1-W_n)² + 0.10(1-C_n)²]",
-    measures: "A weighted aircraft efficiency score using normalized glide, range, passenger capacity, fuel burn, wing loading, and CO₂.",
-    matters: "It balances performance and environmental efficiency in one score.",
-    affects: "It contributes 25% of the final score and also powers the elite score.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Elite Tournament Separation Score",
-    formula: "eliteScore = 100 × (compositeScore / 100)³",
-    measures: "A power-scaled version of the composite score.",
-    matters: "It compresses average designs and makes elite designs stand apart.",
-    affects: "It contributes 15% of the final score.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Final Pristine Skies Score",
-    formula: "0.20D + 0.15E + 0.10G + 0.15L + 0.25C + 0.15T",
-    measures: "The final blend of difficulty, exponential reward, penalty control, logistic quality, composite efficiency, and elite separation.",
-    matters: "This is the headline tournament ranking score.",
-    affects: "Aircraft are ranked from highest to lowest by this score.",
-    direction: "Higher is better."
-  },
-  {
-    title: "Final Score Z-Score",
-    formula: "z = (finalScore - datasetMean) / datasetStandardDeviation",
-    measures: "How far an aircraft's final score sits above or below the group average.",
-    matters: "It helps compare tournament separation when several aircraft are loaded.",
-    affects: "It is displayed for context and does not change the final score.",
-    direction: "Higher is better than the dataset average."
-  }
-];
+const STORAGE_KEY = "pristine-skies-aircraft-platform-v2";
 
 const fieldIds = [
   "aircraftName",
-  "glideRatio",
-  "fuelBurn",
-  "range",
-  "passengerCapacity",
-  "aircraftWeight",
+  "manufacturer",
+  "aircraftType",
+  "wingspan",
   "wingArea",
+  "aircraftWeight",
+  "liftCoefficient",
+  "dragCoefficient",
+  "totalFuelBurn",
+  "flightDistance",
+  "passengerCapacity",
+  "averageLoadFactor",
+  "totalCo2Output",
   "cruiseSpeed",
-  "co2Output",
-  "difficultyRating",
-  "validDesign",
-  "wrongDesignCount"
+  "maximumRange"
 ];
 
-const numericFields = fieldIds.filter((field) => !["aircraftName", "validDesign"].includes(field));
+const numericFields = [
+  "wingspan",
+  "wingArea",
+  "aircraftWeight",
+  "liftCoefficient",
+  "dragCoefficient",
+  "totalFuelBurn",
+  "flightDistance",
+  "passengerCapacity",
+  "averageLoadFactor",
+  "totalCo2Output",
+  "cruiseSpeed",
+  "maximumRange"
+];
+
+const labels = {
+  aircraftName: "Aircraft name",
+  manufacturer: "Manufacturer",
+  aircraftType: "Aircraft type",
+  wingspan: "Wingspan",
+  wingArea: "Wing area",
+  aircraftWeight: "Aircraft weight / MTOW",
+  liftCoefficient: "Lift coefficient",
+  dragCoefficient: "Drag coefficient",
+  totalFuelBurn: "Total fuel burn",
+  flightDistance: "Flight distance",
+  passengerCapacity: "Passenger capacity",
+  averageLoadFactor: "Average load factor",
+  totalCo2Output: "Total CO₂ output",
+  cruiseSpeed: "Cruise speed",
+  maximumRange: "Maximum range"
+};
+
 const form = document.getElementById("aircraftForm");
-const formTitle = document.getElementById("formTitle");
+const errorBox = document.getElementById("errorBox");
 const submitButton = document.getElementById("submitButton");
 const cancelEditButton = document.getElementById("cancelEditButton");
-const errorBox = document.getElementById("errorBox");
+const liveMetrics = document.getElementById("liveMetrics");
 const aircraftTableBody = document.getElementById("aircraftTableBody");
-const derivedMetrics = document.getElementById("derivedMetrics");
-const singleAircraftNote = document.getElementById("singleAircraftNote");
-const normalizationPanel = document.getElementById("normalizationPanel");
+const scoreSummary = document.getElementById("scoreSummary");
+const scoreBreakdown = document.getElementById("scoreBreakdown");
+const insightsList = document.getElementById("insightsList");
 
 let aircraft = loadAircraft();
 let editingId = null;
-let latestScored = { rows: [], baselines: getEmptyBaselines() };
+let latestScored = scoreAircraftList(aircraft);
 
 initialize();
 
 function initialize() {
-  renderConversionChart();
-  renderFormulaCards();
   bindEvents();
   renderAll();
 }
 
 function bindEvents() {
   form.addEventListener("submit", handleSubmit);
-  form.addEventListener("input", renderDerivedPreview);
-  form.addEventListener("change", renderDerivedPreview);
-  cancelEditButton.addEventListener("click", clearForm);
-  document.getElementById("loadExamplesButton").addEventListener("click", loadExampleAircraft);
+  form.addEventListener("input", renderLivePreview);
+  form.addEventListener("reset", () => {
+    window.setTimeout(() => {
+      if (editingId) clearEditState();
+      hideErrors();
+      renderLivePreview();
+    }, 0);
+  });
+  cancelEditButton.addEventListener("click", () => {
+    clearForm();
+    document.getElementById("analysis").scrollIntoView({ behavior: "smooth" });
+  });
+  document.querySelectorAll(".group-toggle").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const group = toggle.closest(".input-group");
+      const isCollapsed = group.classList.toggle("is-collapsed");
+      toggle.setAttribute("aria-expanded", String(!isCollapsed));
+    });
+  });
   document.getElementById("exportCsvButton").addEventListener("click", exportCsv);
   document.getElementById("downloadJsonButton").addEventListener("click", downloadJson);
-  document.getElementById("resetButton").addEventListener("click", resetAllAircraft);
-  window.addEventListener("resize", debounce(drawCharts, 120));
-}
-
-function renderAll() {
-  latestScored = scoreAircraftList(aircraft);
-  renderTable(latestScored.rows);
-  renderNormalizationPanel(latestScored.baselines);
-  renderDerivedPreview();
-  drawCharts();
-  updateExportButtons();
-}
-
-function renderConversionChart() {
-  document.getElementById("conversionList").innerHTML = conversions.map(([title, text, icon]) => `
-    <div class="conversion-item">
-      <div class="conversion-icon" aria-hidden="true">${getIcon(icon)}</div>
-      <div>
-        <strong>${title}</strong>
-        <span>${text}</span>
-      </div>
-    </div>
-  `).join("");
-}
-
-function renderFormulaCards() {
-  document.getElementById("formulaCards").innerHTML = formulaCards.map((card, index) => `
-    <details class="formula-card" ${index < 2 ? "open" : ""}>
-      <summary>${card.title}</summary>
-      <div class="formula-body">
-        <code>${card.formula}</code>
-        <p><strong>What it measures:</strong> ${card.measures}</p>
-        <p><strong>Why it matters:</strong> ${card.matters}</p>
-        <p><strong>Final score effect:</strong> ${card.affects}</p>
-        <p><strong>Better direction:</strong> ${card.direction}</p>
-      </div>
-    </details>
-  `).join("");
+  document.getElementById("resetButton").addEventListener("click", resetAircraft);
+  window.addEventListener("resize", debounce(drawCharts, 140));
 }
 
 function handleSubmit(event) {
@@ -291,22 +111,20 @@ function handleSubmit(event) {
     return;
   }
 
-  hideErrors();
   const record = {
     ...values,
     id: editingId || createId(),
-    sample: false
+    updatedAt: new Date().toISOString()
   };
 
-  if (editingId) {
-    aircraft = aircraft.map((item) => item.id === editingId ? record : item);
-  } else {
-    aircraft = [...aircraft, record];
-  }
+  aircraft = editingId
+    ? aircraft.map((item) => item.id === editingId ? record : item)
+    : [...aircraft, record];
 
   saveAircraft();
   clearForm();
   renderAll();
+  document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function getFormValues() {
@@ -315,57 +133,50 @@ function getFormValues() {
     const element = document.getElementById(id);
     values[id] = numericFields.includes(id) ? Number(element.value) : element.value.trim();
   });
-  values.validDesign = document.getElementById("validDesign").value;
   return values;
 }
 
 function validateAircraft(values, options = {}) {
   const errors = [];
+  const textFields = ["aircraftName", "manufacturer", "aircraftType"];
 
-  if (!options.allowBlankName && !values.aircraftName) {
-    errors.push("Aircraft name is required.");
-  }
-
-  numericFields.forEach((field) => {
-    if (!Number.isFinite(values[field])) {
-      errors.push(`${labelFor(field)} must be a valid number.`);
-    } else if (values[field] < 0) {
-      errors.push(`${labelFor(field)} cannot be negative.`);
+  textFields.forEach((field) => {
+    if (!options.allowBlankText && !values[field]) {
+      errors.push(`${labels[field]} is required.`);
     }
   });
 
-  if (Number.isFinite(values.glideRatio) && values.glideRatio <= 0) {
-    errors.push("Glide ratio must be greater than 0.");
-  }
-  if (Number.isFinite(values.fuelBurn) && values.fuelBurn <= 0) {
-    errors.push("Fuel burn cannot be zero. Enter gallons per passenger.");
-  }
-  if (Number.isFinite(values.range) && values.range <= 0) {
-    errors.push("Range must be positive.");
-  }
-  if (Number.isFinite(values.passengerCapacity) && values.passengerCapacity <= 0) {
-    errors.push("Passenger capacity must be positive.");
-  }
-  if (Number.isFinite(values.aircraftWeight) && values.aircraftWeight <= 0) {
-    errors.push("Aircraft weight must be greater than 0 so wing loading can be calculated.");
-  }
-  if (Number.isFinite(values.wingArea) && values.wingArea <= 0) {
-    errors.push("Wing area cannot be zero.");
-  }
-  if (Number.isFinite(values.cruiseSpeed) && values.cruiseSpeed <= 0) {
-    errors.push("Cruise speed must be greater than 0.");
-  }
-  if (Number.isFinite(values.co2Output) && values.co2Output <= 0) {
-    errors.push("CO₂ output cannot be zero. Enter kg per passenger.");
-  }
-  if (Number.isFinite(values.difficultyRating) && (values.difficultyRating < 1 || values.difficultyRating > 10)) {
-    errors.push("Difficulty rating must be between 1 and 10.");
-  }
-  if (Number.isFinite(values.wrongDesignCount) && !Number.isInteger(values.wrongDesignCount)) {
-    errors.push("Wrong/failed design count must be a whole number.");
-  }
-  if (!["yes", "no"].includes(values.validDesign)) {
-    errors.push("Correct/valid design must be yes or no.");
+  numericFields.forEach((field) => {
+    if (!Number.isFinite(values[field])) {
+      errors.push(`${labels[field]} must be a valid number.`);
+    } else if (values[field] < 0) {
+      errors.push(`${labels[field]} cannot be negative.`);
+    }
+  });
+
+  const positiveFields = [
+    "wingspan",
+    "wingArea",
+    "aircraftWeight",
+    "liftCoefficient",
+    "dragCoefficient",
+    "totalFuelBurn",
+    "flightDistance",
+    "passengerCapacity",
+    "averageLoadFactor",
+    "totalCo2Output",
+    "cruiseSpeed",
+    "maximumRange"
+  ];
+
+  positiveFields.forEach((field) => {
+    if (Number.isFinite(values[field]) && values[field] <= 0) {
+      errors.push(`${labels[field]} must be greater than zero.`);
+    }
+  });
+
+  if (Number.isFinite(values.averageLoadFactor) && values.averageLoadFactor > 100) {
+    errors.push("Average load factor must be 100% or less.");
   }
 
   return [...new Set(errors)];
@@ -373,7 +184,7 @@ function validateAircraft(values, options = {}) {
 
 function showErrors(errors) {
   errorBox.hidden = false;
-  errorBox.innerHTML = `<ul>${errors.map((error) => `<li>${error}</li>`).join("")}</ul>`;
+  errorBox.innerHTML = `<ul>${errors.map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>`;
 }
 
 function hideErrors() {
@@ -383,14 +194,270 @@ function hideErrors() {
 
 function clearForm() {
   form.reset();
-  document.getElementById("wrongDesignCount").value = "0";
-  document.getElementById("validDesign").value = "yes";
-  editingId = null;
-  formTitle.textContent = "Add Aircraft";
-  submitButton.querySelector("span").textContent = "Add Aircraft";
-  cancelEditButton.hidden = true;
+  clearEditState();
   hideErrors();
-  renderDerivedPreview();
+  renderLivePreview();
+}
+
+function clearEditState() {
+  editingId = null;
+  submitButton.innerHTML = `Add Aircraft <span aria-hidden="true">+</span>`;
+  cancelEditButton.hidden = true;
+}
+
+function renderAll() {
+  latestScored = scoreAircraftList(aircraft);
+  renderLivePreview();
+  renderScoreStage(latestScored.rows);
+  renderTable(latestScored.rows);
+  renderInsights(latestScored.rows, latestScored.baselines);
+  drawCharts();
+  updateUtilityButtons();
+}
+
+function renderLivePreview() {
+  const values = getFormValues();
+  const previewValues = {
+    ...values,
+    aircraftName: values.aircraftName || "Preview Aircraft",
+    manufacturer: values.manufacturer || "Preview Manufacturer",
+    aircraftType: values.aircraftType || "Preview Type"
+  };
+  const errors = validateAircraft(previewValues, { allowBlankText: true });
+
+  if (errors.length) {
+    liveMetrics.innerHTML = `
+      ${metricMarkup("Glide Ratio", "--", "calculated")}
+      ${metricMarkup("Aspect Ratio", "--", "calculated")}
+      ${metricMarkup("Wing Loading", "--", "lb/ft²")}
+      ${metricMarkup("Active Passengers", "--", "calculated")}
+      ${metricMarkup("Fuel / Passenger", "--", "gallons")}
+      ${metricMarkup("Fuel / Passenger-Mile", "--", "gal / passenger-mile")}
+      ${metricMarkup("CO₂ / Passenger", "--", "kg")}
+      ${metricMarkup("CO₂ / Passenger-Mile", "--", "kg / passenger-mile")}
+    `;
+    return;
+  }
+
+  const derived = calculateDerivedMetrics(previewValues);
+  liveMetrics.innerHTML = `
+    ${metricMarkup("Glide Ratio", formatNumber(derived.glideRatio, 2), "lift-to-drag")}
+    ${metricMarkup("Aspect Ratio", formatNumber(derived.aspectRatio, 2), "wing geometry")}
+    ${metricMarkup("Wing Loading", formatNumber(derived.wingLoading, 2), "lb/ft²")}
+    ${metricMarkup("Active Passengers", formatNumber(derived.activePassengers, 0), "load factor adjusted")}
+    ${metricMarkup("Fuel / Passenger", formatNumber(derived.fuelPerPassenger, 2), "gallons")}
+    ${metricMarkup("Fuel / Passenger-Mile", formatNumber(derived.fuelPerPassengerMile, 5), "gal / passenger-mile")}
+    ${metricMarkup("CO₂ / Passenger", formatNumber(derived.co2PerPassenger, 2), "kg")}
+    ${metricMarkup("CO₂ / Passenger-Mile", formatNumber(derived.co2PerPassengerMile, 5), "kg / passenger-mile")}
+  `;
+}
+
+function metricMarkup(label, value, unit) {
+  return `
+    <div class="metric-item">
+      <span>${label}</span>
+      <strong>${value}</strong>
+      <em>${unit}</em>
+    </div>
+  `;
+}
+
+function calculateDerivedMetrics(item) {
+  const activePassengers = item.passengerCapacity * (item.averageLoadFactor / 100);
+  const passengerMiles = activePassengers * item.flightDistance;
+  const glideRatio = item.liftCoefficient / item.dragCoefficient;
+  const aspectRatio = Math.pow(item.wingspan, 2) / item.wingArea;
+  const wingLoading = item.aircraftWeight / item.wingArea;
+  const fuelPerPassenger = item.totalFuelBurn / activePassengers;
+  const fuelPerMile = item.totalFuelBurn / item.flightDistance;
+  const fuelPerPassengerMile = item.totalFuelBurn / passengerMiles;
+  const co2PerPassenger = item.totalCo2Output / activePassengers;
+  const co2PerMile = item.totalCo2Output / item.flightDistance;
+  const co2PerPassengerMile = item.totalCo2Output / passengerMiles;
+
+  return {
+    activePassengers,
+    passengerMiles,
+    glideRatio,
+    aspectRatio,
+    wingLoading,
+    fuelPerPassenger,
+    fuelPerMile,
+    fuelPerPassengerMile,
+    co2PerPassenger,
+    co2PerMile,
+    co2PerPassengerMile
+  };
+}
+
+function scoreAircraftList(list) {
+  const prepared = list.map((item) => ({
+    ...item,
+    derived: calculateDerivedMetrics(item)
+  }));
+  const baselines = calculateBaselines(prepared);
+  const scored = prepared.map((item) => {
+    const scores = calculateScores(item, baselines);
+    return { ...item, scores };
+  });
+
+  return {
+    rows: scored.sort((a, b) => b.scores.finalScore - a.scores.finalScore),
+    baselines
+  };
+}
+
+function calculateBaselines(rows) {
+  const positive = (accessor) => rows.map(accessor).filter((value) => Number.isFinite(value) && value > 0);
+  const max = (accessor) => {
+    const values = positive(accessor);
+    return values.length ? Math.max(...values) : 1;
+  };
+  const min = (accessor) => {
+    const values = positive(accessor);
+    return values.length ? Math.min(...values) : 1;
+  };
+
+  return {
+    bestGlideRatio: max((item) => item.derived.glideRatio),
+    bestAspectRatio: max((item) => item.derived.aspectRatio),
+    bestMaximumRange: max((item) => item.maximumRange),
+    bestCruiseSpeed: max((item) => item.cruiseSpeed),
+    bestActivePassengers: max((item) => item.derived.activePassengers),
+    bestFuelPerPassengerMile: min((item) => item.derived.fuelPerPassengerMile),
+    bestCo2PerPassengerMile: min((item) => item.derived.co2PerPassengerMile),
+    bestWingLoading: min((item) => item.derived.wingLoading)
+  };
+}
+
+function calculateScores(item, baselines) {
+  const n = {
+    glide: ratio(item.derived.glideRatio, baselines.bestGlideRatio),
+    aspect: ratio(item.derived.aspectRatio, baselines.bestAspectRatio),
+    range: ratio(item.maximumRange, baselines.bestMaximumRange),
+    speed: ratio(item.cruiseSpeed, baselines.bestCruiseSpeed),
+    passengers: ratio(item.derived.activePassengers, baselines.bestActivePassengers),
+    fuel: inverseRatio(item.derived.fuelPerPassengerMile, baselines.bestFuelPerPassengerMile),
+    co2: inverseRatio(item.derived.co2PerPassengerMile, baselines.bestCo2PerPassengerMile),
+    wing: inverseRatio(item.derived.wingLoading, baselines.bestWingLoading)
+  };
+
+  const contributions = {
+    "Glide ratio": 0.20 * Math.pow(n.glide, 1.35),
+    "Fuel efficiency": 0.20 * Math.pow(n.fuel, 1.4),
+    "CO₂ efficiency": 0.18 * Math.pow(n.co2, 1.4),
+    "Range performance": 0.14 * n.range,
+    "Wing loading": 0.12 * Math.pow(n.wing, 1.25),
+    "Aspect ratio": 0.08 * n.aspect,
+    "Passenger utilization": 0.05 * n.passengers,
+    "Cruise performance": 0.03 * n.speed
+  };
+
+  const compositeScore = clamp(Object.values(contributions).reduce((sum, value) => sum + value, 0) * 100, 0, 100);
+  const performanceSeparationScore = clamp(100 * Math.pow(compositeScore / 100, 1.65), 0, 100);
+  const finalScore = clamp((0.72 * compositeScore) + (0.28 * performanceSeparationScore), 0, 100);
+
+  return {
+    normalized: n,
+    contributions,
+    compositeScore,
+    performanceSeparationScore,
+    finalScore
+  };
+}
+
+function renderScoreStage(rows) {
+  if (!rows.length) {
+    scoreSummary.innerHTML = `
+      <span class="section-kicker">Final Output</span>
+      <h2>Final Pristine Skies Score</h2>
+      <div class="empty-state">No aircraft data available yet.</div>
+    `;
+    scoreBreakdown.innerHTML = "";
+    return;
+  }
+
+  const top = rows[0];
+  scoreSummary.innerHTML = `
+    <span class="section-kicker">Final Output</span>
+    <h2>Final Pristine Skies Score</h2>
+    <div class="score-aircraft">${escapeHtml(top.aircraftName)}</div>
+    <div class="final-score">${formatNumber(top.scores.finalScore, 1)}</div>
+    <p>${escapeHtml(top.manufacturer)} ${escapeHtml(top.aircraftType)} leads the current fleet ranking based on sustainability, efficiency, and performance separation.</p>
+  `;
+
+  const breakdown = [
+    ["Composite Aerospace Score", top.scores.compositeScore],
+    ["Performance Separation Score", top.scores.performanceSeparationScore],
+    ["Glide Ratio", top.derived.glideRatio],
+    ["Fuel / Passenger-Mile", top.derived.fuelPerPassengerMile],
+    ["CO₂ / Passenger-Mile", top.derived.co2PerPassengerMile],
+    ["Wing Loading", top.derived.wingLoading]
+  ];
+
+  scoreBreakdown.innerHTML = `
+    <h3>Score Breakdown</h3>
+    ${breakdown.map(([label, value], index) => `
+      <div class="breakdown-row">
+        <span>${label}</span>
+        <div class="bar-track"><div style="width: ${breakdownWidth(label, value, top)}%"></div></div>
+        <strong>${formatBreakdownValue(label, value)}</strong>
+      </div>
+    `).join("")}
+  `;
+}
+
+function breakdownWidth(label, value, top) {
+  if (label.includes("Score")) return clamp(value, 0, 100);
+  if (label === "Glide Ratio") return clamp((top.scores.normalized.glide || 0) * 100, 0, 100);
+  if (label.includes("Fuel")) return clamp((top.scores.normalized.fuel || 0) * 100, 0, 100);
+  if (label.includes("CO₂")) return clamp((top.scores.normalized.co2 || 0) * 100, 0, 100);
+  return clamp((top.scores.normalized.wing || 0) * 100, 0, 100);
+}
+
+function formatBreakdownValue(label, value) {
+  if (label.includes("Score")) return formatNumber(value, 1);
+  if (label.includes("Passenger-Mile")) return formatNumber(value, 5);
+  return formatNumber(value, 2);
+}
+
+function renderTable(rows) {
+  if (!rows.length) {
+    aircraftTableBody.innerHTML = `<tr><td colspan="12">No aircraft data available yet.</td></tr>`;
+    return;
+  }
+
+  aircraftTableBody.innerHTML = rows.map((row, index) => `
+    <tr>
+      <td class="rank-cell">${index + 1}</td>
+      <td class="name-cell">
+        <strong>${escapeHtml(row.aircraftName)}</strong>
+        <span>${escapeHtml(row.manufacturer)} · ${escapeHtml(row.aircraftType)}</span>
+      </td>
+      <td>${formatNumber(row.derived.glideRatio, 2)}</td>
+      <td>${formatNumber(row.derived.aspectRatio, 2)}</td>
+      <td>${formatNumber(row.derived.wingLoading, 2)} lb/ft²</td>
+      <td>${formatNumber(row.derived.fuelPerPassengerMile, 5)}</td>
+      <td>${formatNumber(row.derived.co2PerPassengerMile, 5)}</td>
+      <td>${formatNumber(row.maximumRange, 0)} mi</td>
+      <td>${formatNumber(row.scores.compositeScore, 1)}</td>
+      <td>${formatNumber(row.scores.performanceSeparationScore, 1)}</td>
+      <td class="score-cell">${formatNumber(row.scores.finalScore, 1)}</td>
+      <td>
+        <div class="row-actions">
+          <button type="button" data-action="edit" data-id="${row.id}">Edit</button>
+          <button type="button" data-action="delete" data-id="${row.id}">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+  aircraftTableBody.querySelectorAll("button[data-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.dataset.action === "edit") editAircraft(button.dataset.id);
+      if (button.dataset.action === "delete") deleteAircraft(button.dataset.id);
+    });
+  });
 }
 
 function editAircraft(id) {
@@ -400,21 +467,18 @@ function editAircraft(id) {
   fieldIds.forEach((field) => {
     document.getElementById(field).value = item[field];
   });
-
   editingId = id;
-  formTitle.textContent = "Edit Aircraft";
-  submitButton.querySelector("span").textContent = "Update Aircraft";
+  submitButton.textContent = "Update Aircraft";
   cancelEditButton.hidden = false;
   hideErrors();
-  renderDerivedPreview();
-  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  renderLivePreview();
+  document.getElementById("analysis").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function deleteAircraft(id) {
   const item = aircraft.find((entry) => entry.id === id);
   if (!item) return;
-  const shouldDelete = window.confirm(`Delete ${item.aircraftName}?`);
-  if (!shouldDelete) return;
+  if (!window.confirm(`Delete ${item.aircraftName}?`)) return;
 
   aircraft = aircraft.filter((entry) => entry.id !== id);
   if (editingId === id) clearForm();
@@ -422,356 +486,141 @@ function deleteAircraft(id) {
   renderAll();
 }
 
-function loadExampleAircraft() {
-  const shouldReplace = aircraft.length === 0 || window.confirm("Replace current aircraft with sample estimates?");
-  if (!shouldReplace) return;
-
-  aircraft = sampleAircraft.map((item) => ({ ...item, id: `${item.id}-${Date.now()}` }));
-  saveAircraft();
-  clearForm();
-  renderAll();
-}
-
-function resetAllAircraft() {
-  if (aircraft.length === 0) return;
-  const shouldReset = window.confirm("Reset all aircraft data?");
-  if (!shouldReset) return;
-
-  aircraft = [];
-  saveAircraft();
-  clearForm();
-  renderAll();
-}
-
-function renderTable(rows) {
-  if (rows.length === 0) {
-    aircraftTableBody.innerHTML = `
-      <tr class="empty-row">
-        <td colspan="12">No aircraft yet. Add an aircraft or load sample estimates to begin comparing scores.</td>
-      </tr>
-    `;
+function renderInsights(rows, baselines) {
+  if (!rows.length) {
+    insightsList.innerHTML = `<div class="empty-state">No aircraft data available yet.</div>`;
     return;
   }
 
-  aircraftTableBody.innerHTML = rows.map((row, index) => `
-    <tr>
-      <td class="rank-cell">#${index + 1}</td>
-      <td class="name-cell">
-        ${escapeHtml(row.aircraftName)}
-        ${row.sample ? `<span class="sample-badge">Sample Estimate</span>` : ""}
-      </td>
-      <td>${formatNumber(row.glideRatio, 2)}</td>
-      <td>${formatNumber(row.fuelBurn, 2)} gal/passenger</td>
-      <td>${formatNumber(row.range, 0)} mi</td>
-      <td>${formatNumber(row.passengerCapacity, 0)}</td>
-      <td>${formatNumber(row.derived.wingLoading, 2)} lb/ft²</td>
-      <td>${formatNumber(row.co2Output, 2)} kg/passenger</td>
-      <td>${formatNumber(row.scores.compositeScore, 2)}</td>
-      <td>${formatNumber(row.scores.eliteScore, 2)}</td>
-      <td class="score-cell">${formatNumber(row.scores.finalScore, 2)}</td>
-      <td>
-        <div class="row-actions">
-          <button class="row-button" type="button" title="Edit ${escapeHtml(row.aircraftName)}" aria-label="Edit ${escapeHtml(row.aircraftName)}" data-action="edit" data-id="${row.id}">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.7-1 10-10a2.2 2.2 0 0 0-3.1-3.1l-10 10L4 20Z"/><path d="m14 7 3 3"/></svg>
-          </button>
-          <button class="row-button" type="button" title="Delete ${escapeHtml(row.aircraftName)}" aria-label="Delete ${escapeHtml(row.aircraftName)}" data-action="delete" data-id="${row.id}">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m7 6 1 14h8l1-14"/><path d="M10 11v5M14 11v5"/></svg>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join("");
+  const top = rows[0];
+  const insights = buildInsights(top, rows, baselines);
 
-  aircraftTableBody.querySelectorAll("button[data-action]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.action;
-      const id = button.dataset.id;
-      if (action === "edit") editAircraft(id);
-      if (action === "delete") deleteAircraft(id);
-    });
-  });
+  insightsList.innerHTML = insights.map((insight, index) => `
+    <article>
+      <span>${String(index + 1).padStart(2, "0")}</span>
+      <p>${escapeHtml(insight)}</p>
+    </article>
+  `).join("");
 }
 
-function renderNormalizationPanel(baselines) {
-  const stats = [
-    ["Best Glide Ratio", baselines.bestGlideRatio, ""],
-    ["Best Range", baselines.bestRange, "mi"],
-    ["Best Capacity", baselines.bestPassengerCapacity, "passengers"],
-    ["Worst Fuel Burn", baselines.worstFuelBurn, "gal/passenger"],
-    ["Worst Wing Loading", baselines.worstWingLoading, "lb/ft²"],
-    ["Worst CO₂ Output", baselines.worstCO2Output, "kg/passenger"]
+function buildInsights(top, rows) {
+  const sortedContributions = Object.entries(top.scores.contributions)
+    .sort((a, b) => b[1] - a[1]);
+  const strongest = sortedContributions[0]?.[0] || "Composite efficiency";
+  const fuelDelta = estimateFuelReductionImpact(top);
+  const averageWingLoading = average(rows, (item) => item.derived.wingLoading);
+  const averageCo2 = average(rows, (item) => item.derived.co2PerPassengerMile);
+
+  const insights = [
+    `${strongest} is the largest contributor to ${top.aircraftName}'s score.`,
+    `Reducing fuel burn by 10% could improve the Final Pristine Skies Score by approximately ${formatNumber(fuelDelta, 1)} points.`
   ];
 
-  normalizationPanel.innerHTML = stats.map(([label, value, unit]) => `
-    <div class="normalization-stat">
-      <span>${label}</span>
-      <strong>${value > 0 ? `${formatNumber(value, 2)} ${unit}`.trim() : "No data"}</strong>
-    </div>
-  `).join("");
-}
-
-function renderDerivedPreview() {
-  const values = getFormValues();
-  const canCompute = validateAircraft({ ...values, aircraftName: values.aircraftName || "Preview" }, { allowBlankName: true }).length === 0;
-
-  if (!canCompute) {
-    derivedMetrics.innerHTML = getMetricCards([
-      ["Wing Loading", "--", "lb/ft²"],
-      ["Fuel Efficiency Score", "--", "1 / gallons"],
-      ["CO₂ Efficiency Score", "--", "1 / kg"],
-      ["Passenger Range Value", "--", "passenger-miles"],
-      ["Sustainability Index", "--", "higher is better"],
-      ["Final Pristine Skies Score", "--", "0-100"]
-    ]);
-    singleAircraftNote.textContent = "Complete all required numeric fields with positive values to preview derived metrics.";
-    return;
+  if (top.derived.co2PerPassengerMile > averageCo2 && rows.length > 1) {
+    insights.push("CO₂ emissions are limiting overall sustainability performance.");
+  } else {
+    insights.push("CO₂ efficiency is supporting the aircraft's sustainability profile.");
   }
 
-  const previewId = editingId || "preview-aircraft";
-  const previewRecord = {
-    ...values,
-    aircraftName: values.aircraftName || "Preview Aircraft",
-    id: previewId,
-    sample: false
+  if (top.derived.wingLoading > averageWingLoading && rows.length > 1) {
+    insights.push("Wing loading is above the fleet average.");
+  } else {
+    insights.push("Wing loading is competitive against the current fleet average.");
+  }
+
+  if (rows.length === 1) {
+    insights.push("Add more aircraft to strengthen relative ranking and performance differentiation.");
+  } else {
+    const spread = rows[0].scores.finalScore - rows[rows.length - 1].scores.finalScore;
+    insights.push(`The current fleet has a ${formatNumber(spread, 1)} point spread between first and last place.`);
+  }
+
+  return insights;
+}
+
+function estimateFuelReductionImpact(top) {
+  const modified = {
+    ...top,
+    totalFuelBurn: top.totalFuelBurn * 0.9
   };
-
-  const comparisonSet = editingId
-    ? aircraft.map((item) => item.id === editingId ? previewRecord : item)
-    : [...aircraft, previewRecord];
-
-  const scored = scoreAircraftList(comparisonSet);
-  const preview = scored.rows.find((row) => row.id === previewId);
-
-  if (!preview) return;
-
-  derivedMetrics.innerHTML = getMetricCards([
-    ["Wing Loading", formatNumber(preview.derived.wingLoading, 2), "lb/ft²"],
-    ["Fuel Efficiency Score", formatNumber(preview.derived.fuelEfficiency, 4), "1 / gallons"],
-    ["CO₂ Efficiency Score", formatNumber(preview.derived.co2Efficiency, 4), "1 / kg"],
-    ["Passenger Range Value", formatNumber(preview.derived.passengerRange, 0), "passenger-miles"],
-    ["Sustainability Index", formatNumber(preview.derived.sustainabilityIndex, 3), "higher is better"],
-    ["Difficulty Weighted", formatNumber(preview.scores.difficultyWeightedScore, 2), "raw"],
-    ["Exponential Difficulty", formatNumber(preview.scores.exponentialScore, 2), "raw"],
-    ["Guessing Penalty", formatNumber(preview.scores.guessingPenaltyScore, 2), "raw"],
-    ["Logistic Quality", formatNumber(preview.scores.logisticScoreFinal, 2), "0-100"],
-    ["Power Score", formatNumber(preview.scores.powerScore, 2), "0-100"],
-    ["Composite Aerospace", formatNumber(preview.scores.compositeScore, 2), "0-100"],
-    ["Elite Separation", formatNumber(preview.scores.eliteScore, 2), "0-100"],
-    ["Final Pristine Skies", formatNumber(preview.scores.finalScore, 2), "0-100", true],
-    ["Final Score Z-Score", formatNumber(preview.scores.zScore, 2), "dataset context"]
-  ]);
-
-  singleAircraftNote.textContent = comparisonSet.length < 2
-    ? "Comparison warning: power, composite, and z-score values are more meaningful with multiple aircraft."
-    : "Preview scores use the current dataset normalization values.";
-}
-
-function getMetricCards(metrics) {
-  return metrics.map(([label, value, unit, accent]) => `
-    <div class="metric ${accent ? "accent" : ""}">
-      <span>${label}</span>
-      <strong>${value}</strong>
-      <span>${unit}</span>
-    </div>
-  `).join("");
-}
-
-function scoreAircraftList(list) {
-  const derivedRows = list.map((item) => ({
+  const comparison = [top, modified].map((item) => ({
     ...item,
     derived: calculateDerivedMetrics(item)
   }));
-
-  const baselines = calculateBaselines(derivedRows);
-  const rowsWithScores = derivedRows.map((item) => ({
-    ...item,
-    scores: calculateScores(item, baselines)
-  }));
-
-  const mean = rowsWithScores.length
-    ? rowsWithScores.reduce((sum, item) => sum + item.scores.finalScore, 0) / rowsWithScores.length
-    : 0;
-  const variance = rowsWithScores.length
-    ? rowsWithScores.reduce((sum, item) => sum + Math.pow(item.scores.finalScore - mean, 2), 0) / rowsWithScores.length
-    : 0;
-  const standardDeviation = Math.sqrt(variance);
-
-  const rows = rowsWithScores
-    .map((item) => ({
-      ...item,
-      scores: {
-        ...item.scores,
-        zScore: standardDeviation > 0 ? (item.scores.finalScore - mean) / standardDeviation : 0
-      }
-    }))
-    .sort((a, b) => b.scores.finalScore - a.scores.finalScore);
-
-  return { rows, baselines: { ...baselines, mean, standardDeviation } };
-}
-
-function calculateDerivedMetrics(item) {
-  const wingLoading = item.aircraftWeight / item.wingArea;
-  const fuelEfficiency = 1 / item.fuelBurn;
-  const co2Efficiency = 1 / item.co2Output;
-  const passengerRange = item.passengerCapacity * item.range;
-  const sustainabilityIndex = (item.glideRatio * item.passengerCapacity * item.range) /
-    (item.fuelBurn * item.co2Output * wingLoading);
-
-  return {
-    wingLoading,
-    fuelEfficiency,
-    co2Efficiency,
-    passengerRange,
-    sustainabilityIndex
-  };
-}
-
-function calculateBaselines(rows) {
-  if (rows.length === 0) return getEmptyBaselines();
-
-  return {
-    bestSustainabilityIndex: maxValue(rows, (item) => item.derived.sustainabilityIndex),
-    bestGlideRatio: maxValue(rows, (item) => item.glideRatio),
-    bestRange: maxValue(rows, (item) => item.range),
-    bestPassengerCapacity: maxValue(rows, (item) => item.passengerCapacity),
-    worstFuelBurn: maxValue(rows, (item) => item.fuelBurn),
-    worstWingLoading: maxValue(rows, (item) => item.derived.wingLoading),
-    worstCO2Output: maxValue(rows, (item) => item.co2Output)
-  };
-}
-
-function calculateScores(item, baselines) {
-  const correctValue = item.validDesign === "yes" ? 1 : 0;
-  const difficultyWeightedScore = correctValue * Math.pow(item.difficultyRating, 2);
-  const exponentialScore = correctValue * Math.exp(0.3 * item.difficultyRating);
-  const guessingPenaltyScore = 6 * correctValue - 2 * item.wrongDesignCount;
-  const normalizedSkill = item.derived.sustainabilityIndex / (item.derived.sustainabilityIndex + 100);
-  const logisticScore = 1 / (1 + Math.exp(-((normalizedSkill * 10) - item.difficultyRating)));
-  const logisticScoreFinal = logisticScore * 100;
-  const powerScore = baselines.bestSustainabilityIndex > 0
-    ? clamp(100 * Math.pow(item.derived.sustainabilityIndex / baselines.bestSustainabilityIndex, 3), 0, 100)
-    : 0;
-
-  const G_n = clampRatio(item.glideRatio, baselines.bestGlideRatio);
-  const R_n = clampRatio(item.range, baselines.bestRange);
-  const P_n = clampRatio(item.passengerCapacity, baselines.bestPassengerCapacity);
-  const F_n = clampRatio(item.fuelBurn, baselines.worstFuelBurn);
-  const W_n = clampRatio(item.derived.wingLoading, baselines.worstWingLoading);
-  const C_n = clampRatio(item.co2Output, baselines.worstCO2Output);
-
-  const compositeScore = clamp(100 * (
-    0.30 * Math.pow(G_n, 2) +
-    0.20 * R_n +
-    0.15 * P_n +
-    0.15 * Math.pow(1 - F_n, 2) +
-    0.10 * Math.pow(1 - W_n, 2) +
-    0.10 * Math.pow(1 - C_n, 2)
-  ), 0, 100);
-
-  const eliteScore = clamp(100 * Math.pow(compositeScore / 100, 3), 0, 100);
-  const difficultyWeightedScoreNormalized = clamp(difficultyWeightedScore, 0, 100);
-  const exponentialScoreNormalized = clamp((exponentialScore / EXPONENTIAL_MAX) * 100, 0, 100);
-  const guessingPenaltyScoreNormalized = clamp(((guessingPenaltyScore - GUESSING_MIN) / (GUESSING_MAX - GUESSING_MIN)) * 100, 0, 100);
-
-  const finalScore = clamp(
-    0.20 * difficultyWeightedScoreNormalized +
-    0.15 * exponentialScoreNormalized +
-    0.10 * guessingPenaltyScoreNormalized +
-    0.15 * logisticScoreFinal +
-    0.25 * compositeScore +
-    0.15 * eliteScore,
-    0,
-    100
-  );
-
-  return {
-    correctValue,
-    difficultyWeightedScore,
-    difficultyWeightedScoreNormalized,
-    exponentialScore,
-    exponentialScoreNormalized,
-    guessingPenaltyScore,
-    guessingPenaltyScoreNormalized,
-    normalizedSkill,
-    logisticScoreFinal,
-    powerScore,
-    compositeScore,
-    eliteScore,
-    finalScore,
-    zScore: 0
-  };
+  const baselines = calculateBaselines(comparison);
+  const original = calculateScores(comparison[0], baselines).finalScore;
+  const improved = calculateScores(comparison[1], baselines).finalScore;
+  return Math.max(0, improved - original);
 }
 
 function drawCharts() {
   const rows = latestScored.rows;
-  drawBarChart("finalScoreChart", rows, (item) => item.scores.finalScore, "Final Score");
-  drawBarChart("compositeScoreChart", rows, (item) => item.scores.compositeScore, "Composite Score");
-  drawScatterChart("glideFuelChart", rows, (item) => item.glideRatio, (item) => item.fuelBurn, "Glide Ratio", "Fuel Burn");
+  drawBarChart("finalScoreChart", rows, (item) => item.scores.finalScore);
+  drawBarChart("compositeScoreChart", rows, (item) => item.scores.compositeScore);
+  drawScatterChart("glideFuelChart", rows, (item) => item.derived.glideRatio, (item) => 1 / item.derived.fuelPerPassengerMile, "Glide Ratio", "Fuel Efficiency");
   drawScatterChart("wingFinalChart", rows, (item) => item.derived.wingLoading, (item) => item.scores.finalScore, "Wing Loading", "Final Score");
-  drawScatterChart("co2FinalChart", rows, (item) => item.co2Output, (item) => item.scores.finalScore, "CO₂ Output", "Final Score");
+  drawScatterChart("co2FinalChart", rows, (item) => 1 / item.derived.co2PerPassengerMile, (item) => item.scores.finalScore, "CO₂ Efficiency", "Final Score");
 }
 
-function drawBarChart(canvasId, rows, valueAccessor, label) {
+function drawBarChart(canvasId, rows, accessor) {
   const canvas = document.getElementById(canvasId);
   const { ctx, width, height } = prepareCanvas(canvas);
-  clearChart(ctx, width, height);
+  clearCanvas(ctx, width, height);
 
-  if (rows.length === 0) {
-    drawEmptyChart(ctx, width, height, "Add aircraft to populate chart.");
+  if (!rows.length) {
+    drawEmpty(ctx, width, height);
     return;
   }
 
-  const margin = { top: 24, right: 20, bottom: 72, left: 48 };
+  const margin = { top: 34, right: 26, bottom: 82, left: 58 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
-  const barGap = 10;
-  const barWidth = Math.max(12, (chartWidth - barGap * (rows.length - 1)) / rows.length);
-  const gradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + chartHeight);
-  gradient.addColorStop(0, "#75e39a");
-  gradient.addColorStop(1, "#63dce1");
+  const gap = Math.max(12, chartWidth * 0.025);
+  const barWidth = Math.max(18, (chartWidth - gap * (rows.length - 1)) / rows.length);
 
   drawGrid(ctx, margin, width, height, 0, 100);
-  ctx.fillStyle = gradient;
+  const gradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + chartHeight);
+  gradient.addColorStop(0, "#66f27e");
+  gradient.addColorStop(1, "#35e9c2");
 
   rows.forEach((row, index) => {
-    const value = clamp(valueAccessor(row), 0, 100);
-    const x = margin.left + index * (barWidth + barGap);
-    const barHeight = (value / 100) * chartHeight;
-    const y = margin.top + chartHeight - barHeight;
-    ctx.fillRect(x, y, barWidth, barHeight);
-    ctx.fillStyle = "#eaf0ed";
-    ctx.font = "12px Segoe UI, sans-serif";
+    const value = clamp(accessor(row), 0, 100);
+    const x = margin.left + index * (barWidth + gap);
+    const h = (value / 100) * chartHeight;
+    const y = margin.top + chartHeight - h;
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, barWidth, h);
+    ctx.fillStyle = "#f6fff8";
+    ctx.font = "600 13px Inter, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(formatNumber(value, 1), x + barWidth / 2, y - 7);
+    ctx.fillText(formatNumber(value, 1), x + barWidth / 2, y - 8);
     ctx.save();
-    ctx.translate(x + barWidth / 2, height - 16);
+    ctx.translate(x + barWidth / 2, height - 22);
     ctx.rotate(-Math.PI / 5);
-    ctx.fillStyle = "#b7c1bd";
+    ctx.fillStyle = "#b9c2bd";
+    ctx.font = "500 12px Inter, sans-serif";
     ctx.fillText(shortName(row.aircraftName), 0, 0);
     ctx.restore();
-    ctx.fillStyle = gradient;
   });
-
-  drawChartLabel(ctx, label, width);
 }
 
 function drawScatterChart(canvasId, rows, xAccessor, yAccessor, xLabel, yLabel) {
   const canvas = document.getElementById(canvasId);
   const { ctx, width, height } = prepareCanvas(canvas);
-  clearChart(ctx, width, height);
+  clearCanvas(ctx, width, height);
 
-  if (rows.length === 0) {
-    drawEmptyChart(ctx, width, height, "Add aircraft to populate chart.");
+  if (!rows.length) {
+    drawEmpty(ctx, width, height);
     return;
   }
 
-  const margin = { top: 24, right: 28, bottom: 50, left: 58 };
-  const xs = rows.map(xAccessor);
-  const ys = rows.map(yAccessor);
-  const xRange = paddedRange(Math.min(...xs), Math.max(...xs));
-  const yRange = paddedRange(Math.min(...ys), Math.max(...ys), yLabel.includes("Score") ? [0, 100] : null);
+  const margin = { top: 28, right: 30, bottom: 58, left: 62 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
+  const xValues = rows.map(xAccessor);
+  const yValues = rows.map(yAccessor);
+  const xRange = paddedRange(Math.min(...xValues), Math.max(...xValues));
+  const yRange = paddedRange(Math.min(...yValues), Math.max(...yValues), yLabel.includes("Score") ? [0, 100] : null);
 
   drawGrid(ctx, margin, width, height, yRange.min, yRange.max);
   drawAxisLabels(ctx, width, height, xLabel, yLabel);
@@ -780,40 +629,47 @@ function drawScatterChart(canvasId, rows, xAccessor, yAccessor, xLabel, yLabel) 
     const x = margin.left + ((xAccessor(row) - xRange.min) / (xRange.max - xRange.min)) * chartWidth;
     const y = margin.top + chartHeight - ((yAccessor(row) - yRange.min) / (yRange.max - yRange.min)) * chartHeight;
     ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = index === 0 ? "#75e39a" : "#63dce1";
+    ctx.arc(x, y, index === 0 ? 7 : 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = index === 0 ? "#66f27e" : "#35e9c2";
     ctx.fill();
-    ctx.strokeStyle = "rgba(244, 247, 245, 0.76)";
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = "rgba(255,255,255,0.82)";
+    ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillStyle = "#d8e4de";
-    ctx.font = "11px Segoe UI, sans-serif";
+    ctx.fillStyle = "#eef7f1";
+    ctx.font = "500 11px Inter, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(shortName(row.aircraftName), x + 8, y - 8);
+    ctx.fillText(shortName(row.aircraftName), x + 9, y - 8);
   });
 }
 
 function prepareCanvas(canvas) {
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+  canvas.height = Math.max(1, Math.floor(rect.height * ratio));
   const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   return { ctx, width: rect.width, height: rect.height };
 }
 
-function clearChart(ctx, width, height) {
+function clearCanvas(ctx, width, height) {
   ctx.clearRect(0, 0, width, height);
+}
+
+function drawEmpty(ctx, width, height) {
+  ctx.fillStyle = "#a7aaa7";
+  ctx.font = "500 14px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("No aircraft data available yet.", width / 2, height / 2);
 }
 
 function drawGrid(ctx, margin, width, height, minY, maxY) {
   const chartHeight = height - margin.top - margin.bottom;
   const chartWidth = width - margin.left - margin.right;
-  ctx.strokeStyle = "rgba(183, 193, 189, 0.16)";
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
   ctx.lineWidth = 1;
-  ctx.fillStyle = "#82908b";
-  ctx.font = "11px Segoe UI, sans-serif";
+  ctx.fillStyle = "#8e9691";
+  ctx.font = "11px Inter, sans-serif";
   ctx.textAlign = "right";
 
   for (let i = 0; i <= 4; i += 1) {
@@ -823,62 +679,48 @@ function drawGrid(ctx, margin, width, height, minY, maxY) {
     ctx.moveTo(margin.left, y);
     ctx.lineTo(margin.left + chartWidth, y);
     ctx.stroke();
-    ctx.fillText(formatNumber(value, 0), margin.left - 8, y + 4);
+    ctx.fillText(formatNumber(value, 0), margin.left - 10, y + 4);
   }
 }
 
 function drawAxisLabels(ctx, width, height, xLabel, yLabel) {
-  ctx.fillStyle = "#b7c1bd";
-  ctx.font = "12px Segoe UI, sans-serif";
+  ctx.fillStyle = "#cbd3ce";
+  ctx.font = "600 12px Inter, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(xLabel, width / 2, height - 12);
+  ctx.fillText(xLabel, width / 2, height - 14);
   ctx.save();
-  ctx.translate(14, height / 2);
+  ctx.translate(16, height / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.fillText(yLabel, 0, 0);
   ctx.restore();
 }
 
-function drawChartLabel(ctx, label, width) {
-  ctx.fillStyle = "#b7c1bd";
-  ctx.font = "12px Segoe UI, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(label, width / 2, 18);
-}
-
-function drawEmptyChart(ctx, width, height, message) {
-  ctx.fillStyle = "#b7c1bd";
-  ctx.font = "14px Segoe UI, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(message, width / 2, height / 2);
-}
-
 function exportCsv() {
-  if (latestScored.rows.length === 0) return;
+  if (!latestScored.rows.length) return;
   const headers = [
     "Rank",
     "Aircraft Name",
     "Glide Ratio",
-    "Fuel Burn gal/passenger",
-    "Range miles",
-    "Passenger Capacity",
-    "Wing Loading lb/ft2",
-    "CO2 Output kg/passenger",
+    "Aspect Ratio",
+    "Wing Loading",
+    "Fuel Per Passenger-Mile",
+    "CO2 Per Passenger-Mile",
+    "Maximum Range",
     "Composite Score",
-    "Elite Score",
+    "Performance Separation Score",
     "Final Pristine Skies Score"
   ];
   const rows = latestScored.rows.map((row, index) => [
     index + 1,
     row.aircraftName,
-    row.glideRatio,
-    row.fuelBurn,
-    row.range,
-    row.passengerCapacity,
+    row.derived.glideRatio,
+    row.derived.aspectRatio,
     row.derived.wingLoading,
-    row.co2Output,
+    row.derived.fuelPerPassengerMile,
+    row.derived.co2PerPassengerMile,
+    row.maximumRange,
     row.scores.compositeScore,
-    row.scores.eliteScore,
+    row.scores.performanceSeparationScore,
     row.scores.finalScore
   ]);
   const csv = [headers, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\n");
@@ -886,18 +728,24 @@ function exportCsv() {
 }
 
 function downloadJson() {
-  if (latestScored.rows.length === 0) return;
-  const payload = {
-    project: "Pristine Skies Score Calculator",
+  if (!latestScored.rows.length) return;
+  downloadFile("pristine-skies-results.json", JSON.stringify({
+    project: "Pristine Skies",
     generatedAt: new Date().toISOString(),
-    note: "Sample aircraft are educational estimates when sample is true.",
-    baselines: latestScored.baselines,
     aircraft: latestScored.rows
-  };
-  downloadFile("pristine-skies-results.json", JSON.stringify(payload, null, 2), "application/json");
+  }, null, 2), "application/json");
 }
 
-function updateExportButtons() {
+function resetAircraft() {
+  if (!aircraft.length) return;
+  if (!window.confirm("Reset all aircraft data?")) return;
+  aircraft = [];
+  saveAircraft();
+  clearForm();
+  renderAll();
+}
+
+function updateUtilityButtons() {
   const disabled = latestScored.rows.length === 0;
   document.getElementById("exportCsvButton").disabled = disabled;
   document.getElementById("downloadJsonButton").disabled = disabled;
@@ -916,56 +764,45 @@ function downloadFile(filename, content, type) {
   URL.revokeObjectURL(url);
 }
 
+function saveAircraft() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(aircraft));
+}
+
 function loadAircraft() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return [];
-    const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) ? parsed : [];
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter(isModernAircraftRecord) : [];
   } catch {
     return [];
   }
 }
 
-function saveAircraft() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(aircraft));
+function isModernAircraftRecord(item) {
+  return item && fieldIds.every((field) => Object.prototype.hasOwnProperty.call(item, field));
 }
 
-function maxValue(rows, accessor) {
-  return rows.reduce((max, item) => Math.max(max, accessor(item)), 0);
+function ratio(value, baseline) {
+  return baseline > 0 ? clamp(value / baseline, 0, 1) : 0;
 }
 
-function getEmptyBaselines() {
-  return {
-    bestSustainabilityIndex: 0,
-    bestGlideRatio: 0,
-    bestRange: 0,
-    bestPassengerCapacity: 0,
-    worstFuelBurn: 0,
-    worstWingLoading: 0,
-    worstCO2Output: 0,
-    mean: 0,
-    standardDeviation: 0
-  };
+function inverseRatio(value, best) {
+  return value > 0 ? clamp(best / value, 0, 1) : 0;
 }
 
-function clampRatio(value, denominator) {
-  return denominator > 0 ? clamp(value / denominator, 0, 1) : 0;
+function average(rows, accessor) {
+  if (!rows.length) return 0;
+  return rows.reduce((sum, row) => sum + accessor(row), 0) / rows.length;
+}
+
+function paddedRange(min, max, forced) {
+  if (forced) return { min: forced[0], max: forced[1] };
+  if (min === max) return { min: min * 0.9, max: max * 1.1 || 1 };
+  const padding = (max - min) * 0.14;
+  return { min: Math.max(0, min - padding), max: max + padding };
 }
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
-}
-
-function paddedRange(min, max, forcedRange) {
-  if (forcedRange) {
-    return { min: forcedRange[0], max: forcedRange[1] };
-  }
-  if (min === max) {
-    return { min: min - 1, max: max + 1 };
-  }
-  const padding = (max - min) * 0.12;
-  return { min: Math.max(0, min - padding), max: max + padding };
 }
 
 function formatNumber(value, decimals = 2) {
@@ -977,28 +814,12 @@ function formatNumber(value, decimals = 2) {
 }
 
 function shortName(name) {
-  return name.length > 16 ? `${name.slice(0, 14)}...` : name;
-}
-
-function labelFor(field) {
-  const labels = {
-    glideRatio: "Glide ratio",
-    fuelBurn: "Fuel burn",
-    range: "Range",
-    passengerCapacity: "Passenger capacity",
-    aircraftWeight: "Aircraft weight",
-    wingArea: "Wing area",
-    cruiseSpeed: "Cruise speed",
-    co2Output: "CO₂ output",
-    difficultyRating: "Difficulty rating",
-    wrongDesignCount: "Wrong/failed design count"
-  };
-  return labels[field] || field;
+  return name.length > 18 ? `${name.slice(0, 16)}...` : name;
 }
 
 function createId() {
-  if (crypto && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
   }
   return `aircraft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -1013,11 +834,8 @@ function escapeHtml(value) {
 }
 
 function escapeCsv(value) {
-  const stringValue = String(value);
-  if (/[",\n]/.test(stringValue)) {
-    return `"${stringValue.replaceAll('"', '""')}"`;
-  }
-  return stringValue;
+  const text = String(value);
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 function debounce(callback, wait) {
@@ -1026,16 +844,4 @@ function debounce(callback, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(() => callback(...args), wait);
   };
-}
-
-function getIcon(type) {
-  const icons = {
-    fuel: `<svg viewBox="0 0 24 24"><path d="M7 20V4h8v16"/><path d="M7 8h8"/><path d="M15 7h2l2 2v8a2 2 0 0 0 4 0v-5l-3-3"/><path d="M5 20h12"/></svg>`,
-    mass: `<svg viewBox="0 0 24 24"><path d="M8 7a4 4 0 0 1 8 0"/><path d="M6 7h12l2 13H4L6 7Z"/><path d="M9 12h6"/></svg>`,
-    distance: `<svg viewBox="0 0 24 24"><path d="M4 17c4-7 12-7 16 0"/><path d="M5 17h14"/><path d="M12 5v9"/><path d="m8 9 4-4 4 4"/></svg>`,
-    area: `<svg viewBox="0 0 24 24"><path d="M5 5h14v14H5Z"/><path d="M9 5v14M15 5v14M5 9h14M5 15h14"/></svg>`,
-    passenger: `<svg viewBox="0 0 24 24"><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>`,
-    wing: `<svg viewBox="0 0 24 24"><path d="M3 14 21 5 9 19l-2-6-4 1Z"/><path d="m9 19 4-8"/></svg>`
-  };
-  return icons[type] || icons.wing;
 }
