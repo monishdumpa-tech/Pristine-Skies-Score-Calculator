@@ -580,8 +580,9 @@ function drawBarChart(canvasId, rows, accessor) {
 
   drawGrid(ctx, margin, width, height, 0, 100);
   const gradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + chartHeight);
-  gradient.addColorStop(0, "#66f27e");
-  gradient.addColorStop(1, "#35e9c2");
+  gradient.addColorStop(0, "#e6f8ff");
+  gradient.addColorStop(0.48, "#8fdcff");
+  gradient.addColorStop(1, "#4db9ff");
 
   rows.forEach((row, index) => {
     const value = clamp(accessor(row), 0, 100);
@@ -630,7 +631,7 @@ function drawScatterChart(canvasId, rows, xAccessor, yAccessor, xLabel, yLabel) 
     const y = margin.top + chartHeight - ((yAccessor(row) - yRange.min) / (yRange.max - yRange.min)) * chartHeight;
     ctx.beginPath();
     ctx.arc(x, y, index === 0 ? 7 : 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = index === 0 ? "#66f27e" : "#35e9c2";
+    ctx.fillStyle = index === 0 ? "#8fdcff" : "#4db9ff";
     ctx.fill();
     ctx.strokeStyle = "rgba(255,255,255,0.82)";
     ctx.lineWidth = 1;
