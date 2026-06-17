@@ -1,0 +1,11 @@
+{
+  "name": "pristine-skies-score-calculator",
+  "version": "1.0.0",
+  "description": "A local full-stack educational aircraft efficiency scoring website.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "private": true,
+  "license": "UNLICENSED"
+}
