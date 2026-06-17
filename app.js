@@ -9,12 +9,8 @@ const fieldIds = [
   "wingspan",
   "wingArea",
   "aircraftWeight",
-  "liftCoefficient",
-  "dragCoefficient",
   "totalFuelBurn",
-  "flightDistance",
   "passengerCapacity",
-  "averageLoadFactor",
   "totalCo2Output",
   "cruiseSpeed",
   "maximumRange"
@@ -24,12 +20,8 @@ const numericFields = [
   "wingspan",
   "wingArea",
   "aircraftWeight",
-  "liftCoefficient",
-  "dragCoefficient",
   "totalFuelBurn",
-  "flightDistance",
   "passengerCapacity",
-  "averageLoadFactor",
   "totalCo2Output",
   "cruiseSpeed",
   "maximumRange"
@@ -42,12 +34,8 @@ const labels = {
   wingspan: "Wingspan",
   wingArea: "Wing area",
   aircraftWeight: "Aircraft weight / MTOW",
-  liftCoefficient: "Lift coefficient",
-  dragCoefficient: "Drag coefficient",
   totalFuelBurn: "Total fuel burn",
-  flightDistance: "Flight distance",
   passengerCapacity: "Passenger capacity",
-  averageLoadFactor: "Average load factor",
   totalCo2Output: "Total CO₂ output",
   cruiseSpeed: "Cruise speed",
   maximumRange: "Maximum range"
@@ -158,12 +146,8 @@ function validateAircraft(values, options = {}) {
     "wingspan",
     "wingArea",
     "aircraftWeight",
-    "liftCoefficient",
-    "dragCoefficient",
     "totalFuelBurn",
-    "flightDistance",
     "passengerCapacity",
-    "averageLoadFactor",
     "totalCo2Output",
     "cruiseSpeed",
     "maximumRange"
@@ -174,10 +158,6 @@ function validateAircraft(values, options = {}) {
       errors.push(`${labels[field]} must be greater than zero.`);
     }
   });
-
-  if (Number.isFinite(values.averageLoadFactor) && values.averageLoadFactor > 100) {
-    errors.push("Average load factor must be 100% or less.");
-  }
 
   return [...new Set(errors)];
 }
@@ -244,7 +224,7 @@ function renderLivePreview() {
     ${metricMarkup("Glide Ratio", formatNumber(derived.glideRatio, 2), "lift-to-drag")}
     ${metricMarkup("Aspect Ratio", formatNumber(derived.aspectRatio, 2), "wing geometry")}
     ${metricMarkup("Wing Loading", formatNumber(derived.wingLoading, 2), "lb/ft²")}
-    ${metricMarkup("Active Passengers", formatNumber(derived.activePassengers, 0), "load factor adjusted")}
+    ${metricMarkup("Active Passengers", formatNumber(derived.activePassengers, 0), "capacity")}
     ${metricMarkup("Fuel / Passenger", formatNumber(derived.fuelPerPassenger, 2), "gallons")}
     ${metricMarkup("Fuel / Passenger-Mile", formatNumber(derived.fuelPerPassengerMile, 5), "gal / passenger-mile")}
     ${metricMarkup("CO₂ / Passenger", formatNumber(derived.co2PerPassenger, 2), "kg")}
@@ -263,16 +243,18 @@ function metricMarkup(label, value, unit) {
 }
 
 function calculateDerivedMetrics(item) {
-  const activePassengers = item.passengerCapacity * (item.averageLoadFactor / 100);
-  const passengerMiles = activePassengers * item.flightDistance;
-  const glideRatio = item.liftCoefficient / item.dragCoefficient;
+  const activePassengers = item.passengerCapacity;
+  const missionHours = item.maximumRange / item.cruiseSpeed;
+  const passengerMiles = activePassengers * item.maximumRange;
   const aspectRatio = Math.pow(item.wingspan, 2) / item.wingArea;
   const wingLoading = item.aircraftWeight / item.wingArea;
-  const fuelPerPassenger = item.totalFuelBurn / activePassengers;
-  const fuelPerMile = item.totalFuelBurn / item.flightDistance;
-  const fuelPerPassengerMile = item.totalFuelBurn / passengerMiles;
+  const glideRatio = estimateGlideRatio(aspectRatio, wingLoading);
+  const missionFuelBurn = item.totalFuelBurn * missionHours;
+  const fuelPerPassenger = missionFuelBurn / activePassengers;
+  const fuelPerMile = item.totalFuelBurn / item.cruiseSpeed;
+  const fuelPerPassengerMile = item.totalFuelBurn / (item.cruiseSpeed * activePassengers);
   const co2PerPassenger = item.totalCo2Output / activePassengers;
-  const co2PerMile = item.totalCo2Output / item.flightDistance;
+  const co2PerMile = item.totalCo2Output / item.maximumRange;
   const co2PerPassengerMile = item.totalCo2Output / passengerMiles;
 
   return {
@@ -288,6 +270,11 @@ function calculateDerivedMetrics(item) {
     co2PerMile,
     co2PerPassengerMile
   };
+}
+
+function estimateGlideRatio(aspectRatio, wingLoading) {
+  const loadingAdjustment = 1 / Math.sqrt(Math.max(wingLoading, 1));
+  return clamp((aspectRatio * 1.95) + (28 * loadingAdjustment), 6, 28);
 }
 
 function scoreAircraftList(list) {
