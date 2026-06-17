@@ -4,6 +4,7 @@
   "description": "A local full-stack educational aircraft efficiency scoring website.",
   "main": "server.js",
   "scripts": {
+    "build": "node build-vercel.js",
     "start": "node server.js"
   },
   "private": true,

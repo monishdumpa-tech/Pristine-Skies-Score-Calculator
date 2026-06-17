@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pristine Skies Score Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <aside class="sidebar" aria-label="Conversion chart">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 96 96" role="img">
+          <path d="M13 55c18-8 35-17 55-36 4-4 11-1 10 5-2 13-12 24-28 35l15 22-8 4-22-16c-10 5-21 9-33 12l-2-8 24-13-11-5Z"/>
+          <path d="M56 27c8 6 16 9 26 10" />
+          <path d="M20 70c9-1 18-4 27-8" />
+        </svg>
+      </div>
+      <section class="panel conversion-panel">
+        <div class="panel-heading">
+          <span class="eyebrow">Reference</span>
+          <h2>Conversion Chart</h2>
+        </div>
+        <div class="conversion-list" id="conversionList"></div>
+      </section>
+    </aside>
+
+    <main class="main-content">
+      <header class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Eco Aerospace Toolkit</span>
+          <h1>Pristine Skies Score Calculator</h1>
+          <p>Analyze aircraft efficiency, glide performance, fuel burn, and sustainability using tournament-style scoring formulas.</p>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <svg viewBox="0 0 240 160" role="img">
+            <path class="sky-line" d="M12 115c40-24 73-26 100-6 20 15 42 18 70 3 16-9 29-13 40-11" />
+            <path class="wing" d="M24 93 214 34c7-2 12 7 6 12l-63 52 25 27-14 8-39-19-61 28-12-7 42-36-66 7Z" />
+            <path class="leaf" d="M162 77c22-13 42-8 54 12-23 10-40 8-54-12Z" />
+            <path class="leaf-line" d="M166 79c13 2 25 6 36 13" />
+          </svg>
+        </div>
+      </header>
+
+      <section class="warning-strip" aria-label="Model warnings">
+        <div>Scores are more meaningful when comparing multiple aircraft.</div>
+        <div>Fuel burn should be entered consistently as gallons per passenger.</div>
+        <div>CO₂ output should be entered consistently as kg per passenger.</div>
+        <div>This is a simplified educational model, not a certified aerospace engineering tool.</div>
+      </section>
+
+      <section class="grid two-column">
+        <form class="panel aircraft-form" id="aircraftForm" novalidate>
+          <div class="panel-heading with-actions">
+            <div>
+              <span class="eyebrow">Aircraft Data</span>
+              <h2 id="formTitle">Add Aircraft</h2>
+            </div>
+            <button class="icon-button" type="button" id="cancelEditButton" aria-label="Cancel edit" title="Cancel edit" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <label class="field wide">
+              <span>Aircraft Name</span>
+              <input id="aircraftName" name="aircraftName" type="text" placeholder="Example: Airbus A320" autocomplete="off" required>
+            </label>
+
+            <label class="field">
+              <span>Glide Ratio</span>
+              <small>Enter glide ratio as lift-to-drag ratio, example: 17</small>
+              <input id="glideRatio" name="glideRatio" type="number" min="0" step="0.01" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Fuel Burn</span>
+              <small>Enter fuel burn in gallons per passenger</small>
+              <input id="fuelBurn" name="fuelBurn" type="number" min="0" step="0.01" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Range</span>
+              <small>Enter range in miles</small>
+              <input id="range" name="range" type="number" min="0" step="1" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Passenger Capacity</span>
+              <small>Enter passenger capacity as number of passengers</small>
+              <input id="passengerCapacity" name="passengerCapacity" type="number" min="0" step="1" inputmode="numeric" required>
+            </label>
+
+            <label class="field">
+              <span>Aircraft Weight</span>
+              <small>Enter aircraft weight in pounds</small>
+              <input id="aircraftWeight" name="aircraftWeight" type="number" min="0" step="1" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Wing Area</span>
+              <small>Enter wing area in square feet</small>
+              <input id="wingArea" name="wingArea" type="number" min="0" step="0.01" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Cruise Speed</span>
+              <small>Enter cruise speed in miles per hour</small>
+              <input id="cruiseSpeed" name="cruiseSpeed" type="number" min="0" step="1" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>CO₂ Output</span>
+              <small>Enter CO₂ output in kg per passenger</small>
+              <input id="co2Output" name="co2Output" type="number" min="0" step="0.01" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Difficulty Rating</span>
+              <small>Enter design difficulty rating from 1 to 10</small>
+              <input id="difficultyRating" name="difficultyRating" type="number" min="1" max="10" step="0.1" inputmode="decimal" required>
+            </label>
+
+            <label class="field">
+              <span>Correct/Valid Design</span>
+              <small>Is this design valid? Select yes or no</small>
+              <select id="validDesign" name="validDesign" required>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Wrong/Failed Design Count</span>
+              <small>Enter number of failed or inefficient design features</small>
+              <input id="wrongDesignCount" name="wrongDesignCount" type="number" min="0" step="1" inputmode="numeric" value="0" required>
+            </label>
+          </div>
+
+          <div class="error-box" id="errorBox" role="alert" hidden></div>
+
+          <div class="button-row">
+            <button class="primary-button" type="submit" id="submitButton">
+              <span>Add Aircraft</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="secondary-button" type="button" id="loadExamplesButton">
+              <span>Load Example Aircraft</span>
+            </button>
+          </div>
+        </form>
+
+        <section class="panel metrics-panel" aria-label="Derived metrics preview">
+          <div class="panel-heading">
+            <span class="eyebrow">Live Preview</span>
+            <h2>Derived Metrics</h2>
+          </div>
+          <div class="metric-grid" id="derivedMetrics"></div>
+          <div class="info-note" id="singleAircraftNote">Complete the form or select an aircraft to preview calculations.</div>
+        </section>
+      </section>
+
+      <section class="panel ranking-panel">
+        <div class="panel-heading with-actions">
+          <div>
+            <span class="eyebrow">Dataset</span>
+            <h2>Aircraft Ranking</h2>
+          </div>
+          <div class="table-actions">
+            <button class="secondary-button compact" type="button" id="exportCsvButton">Export CSV</button>
+            <button class="secondary-button compact" type="button" id="downloadJsonButton">Download JSON</button>
+            <button class="danger-button compact" type="button" id="resetButton">Reset All</button>
+          </div>
+        </div>
+
+        <div class="normalization-panel" id="normalizationPanel"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Aircraft Name</th>
+                <th>Glide Ratio</th>
+                <th>Fuel Burn</th>
+                <th>Range</th>
+                <th>Passenger Capacity</th>
+                <th>Wing Loading</th>
+                <th>CO₂ Output</th>
+                <th>Composite Score</th>
+                <th>Elite Score</th>
+                <th>Final Pristine Skies Score</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="aircraftTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="charts-section">
+        <div class="section-heading">
+          <span class="eyebrow">Visual Analysis</span>
+          <h2>Score Charts</h2>
+        </div>
+        <div class="chart-grid">
+          <section class="panel chart-panel">
+            <h3>Final Pristine Skies Score</h3>
+            <canvas id="finalScoreChart" aria-label="Bar chart of Final Pristine Skies Score by aircraft"></canvas>
+          </section>
+          <section class="panel chart-panel">
+            <h3>Composite Score</h3>
+            <canvas id="compositeScoreChart" aria-label="Bar chart of Composite Score by aircraft"></canvas>
+          </section>
+          <section class="panel chart-panel">
+            <h3>Glide Ratio vs Fuel Burn</h3>
+            <canvas id="glideFuelChart" aria-label="Scatter plot of Glide Ratio vs Fuel Burn"></canvas>
+          </section>
+          <section class="panel chart-panel">
+            <h3>Wing Loading vs Final Score</h3>
+            <canvas id="wingFinalChart" aria-label="Scatter plot of Wing Loading vs Final Score"></canvas>
+          </section>
+          <section class="panel chart-panel wide-chart">
+            <h3>CO₂ Output vs Final Score</h3>
+            <canvas id="co2FinalChart" aria-label="Scatter plot of CO₂ Output vs Final Score"></canvas>
+          </section>
+        </div>
+      </section>
+
+      <section class="formula-section">
+        <div class="section-heading">
+          <span class="eyebrow">Formula Guide</span>
+          <h2>Tournament-Inspired Scoring Systems</h2>
+        </div>
+        <div class="formula-grid" id="formulaCards"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
