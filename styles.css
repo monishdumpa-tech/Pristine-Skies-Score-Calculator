@@ -399,7 +399,7 @@ button:disabled {
 }
 
 .mission-copy {
-  align-self: end;
+  align-self: start;
 }
 
 .mission-copy .section-kicker {
