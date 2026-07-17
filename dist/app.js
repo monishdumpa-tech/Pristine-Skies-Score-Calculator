@@ -41,11 +41,120 @@ const labels = {
   maximumRange: "Maximum range"
 };
 
+const popularAircraft = [
+  {
+    id: "boeing-737-800",
+    aircraftName: "Boeing 737-800",
+    manufacturer: "Boeing",
+    aircraftType: "Short/medium-haul narrowbody passenger",
+    wingspan: 112.6,
+    wingArea: 1345.49,
+    aircraftWeight: 174200,
+    totalFuelBurn: 850,
+    passengerCapacity: 189,
+    totalCo2Output: 50396,
+    cruiseSpeed: 530,
+    maximumRange: 3222,
+    sourceNote: "850 gal/hr fuel, 18,275 lb/hr CO2"
+  },
+  {
+    id: "airbus-a320-ceo",
+    aircraftName: "Airbus A320 (ceo)",
+    manufacturer: "Airbus",
+    aircraftType: "Short/medium-haul narrowbody passenger",
+    wingspan: 117.45,
+    wingArea: 1319.65,
+    aircraftWeight: 171961,
+    totalFuelBurn: 750,
+    passengerCapacity: 180,
+    totalCo2Output: 54397,
+    cruiseSpeed: 518,
+    maximumRange: 3853,
+    sourceNote: "750 gal/hr fuel, 16,125 lb/hr CO2"
+  },
+  {
+    id: "airbus-a320neo",
+    aircraftName: "Airbus A320neo",
+    manufacturer: "Airbus",
+    aircraftType: "Short/medium-haul fleet renewal narrowbody",
+    wingspan: 117.45,
+    wingArea: 1319.65,
+    aircraftWeight: 174165,
+    totalFuelBurn: 668,
+    passengerCapacity: 194,
+    totalCo2Output: 49206,
+    cruiseSpeed: 518,
+    maximumRange: 3913,
+    sourceNote: "668 gal/hr fuel, 14,362 lb/hr CO2"
+  },
+  {
+    id: "boeing-737-max-8",
+    aircraftName: "Boeing 737 MAX 8",
+    manufacturer: "Boeing",
+    aircraftType: "Replacement-growth narrowbody passenger",
+    wingspan: 117.85,
+    wingArea: 1367.02,
+    aircraftWeight: 181198,
+    totalFuelBurn: 750,
+    passengerCapacity: 210,
+    totalCo2Output: 55584,
+    cruiseSpeed: 530,
+    maximumRange: 4028,
+    sourceNote: "750 gal/hr fuel, 16,125 lb/hr CO2"
+  },
+  {
+    id: "airbus-a321-ceo",
+    aircraftName: "Airbus A321 (ceo)",
+    manufacturer: "Airbus",
+    aircraftType: "Higher-capacity narrowbody passenger",
+    wingspan: 111.88,
+    wingArea: 1377.78,
+    aircraftWeight: 206132,
+    totalFuelBurn: 850,
+    passengerCapacity: 220,
+    totalCo2Output: 59165,
+    cruiseSpeed: 518,
+    maximumRange: 3697,
+    sourceNote: "850 gal/hr fuel, 18,275 lb/hr CO2"
+  },
+  {
+    id: "airbus-a321neo",
+    aircraftName: "Airbus A321neo",
+    manufacturer: "Airbus",
+    aircraftType: "High-capacity narrowbody fleet renewal",
+    wingspan: 117.45,
+    wingArea: 1317.5,
+    aircraftWeight: 213848,
+    totalFuelBurn: 928,
+    passengerCapacity: 244,
+    totalCo2Output: 80422,
+    cruiseSpeed: 518,
+    maximumRange: 4603,
+    sourceNote: "928 gal/hr fuel, 19,952 lb/hr CO2"
+  },
+  {
+    id: "airbus-a319-ceo",
+    aircraftName: "Airbus A319 ceo",
+    manufacturer: "Airbus",
+    aircraftType: "Short-haul specialized narrowbody passenger",
+    wingspan: 111.88,
+    wingArea: 1317.5,
+    aircraftWeight: 141095,
+    totalFuelBurn: 759,
+    passengerCapacity: 156,
+    totalCo2Output: 61709,
+    cruiseSpeed: 518,
+    maximumRange: 4319,
+    sourceNote: "759 gal/hr fuel, 16,318.5 lb/hr CO2"
+  }
+];
+
 const form = document.getElementById("aircraftForm");
 const errorBox = document.getElementById("errorBox");
 const submitButton = document.getElementById("submitButton");
 const cancelEditButton = document.getElementById("cancelEditButton");
 const liveMetrics = document.getElementById("liveMetrics");
+const popularAircraftList = document.getElementById("popularAircraftList");
 const aircraftTableBody = document.getElementById("aircraftTableBody");
 const scoreSummary = document.getElementById("scoreSummary");
 const scoreBreakdown = document.getElementById("scoreBreakdown");
@@ -53,21 +162,28 @@ const insightsList = document.getElementById("insightsList");
 
 let aircraft = loadAircraft();
 let editingId = null;
+let lockedPresetId = null;
+let presetHoverSnapshot = null;
 let latestScored = scoreAircraftList(aircraft);
 
 initialize();
 
 function initialize() {
+  renderPopularAircraftPanel();
   bindEvents();
   renderAll();
 }
 
 function bindEvents() {
   form.addEventListener("submit", handleSubmit);
-  form.addEventListener("input", renderLivePreview);
+  form.addEventListener("input", (event) => {
+    if (event.isTrusted) clearPresetSelection();
+    renderLivePreview();
+  });
   form.addEventListener("reset", () => {
     window.setTimeout(() => {
       if (editingId) clearEditState();
+      clearPresetSelection();
       hideErrors();
       renderLivePreview();
     }, 0);
@@ -87,6 +203,62 @@ function bindEvents() {
   document.getElementById("downloadJsonButton").addEventListener("click", downloadJson);
   document.getElementById("resetButton").addEventListener("click", resetAircraft);
   window.addEventListener("resize", debounce(drawCharts, 140));
+}
+
+function renderPopularAircraftPanel() {
+  if (!popularAircraftList) return;
+
+  popularAircraftList.innerHTML = popularAircraft.map((preset) => `
+    <button class="preset-aircraft" type="button" data-preset-id="${preset.id}">
+      <strong>${escapeHtml(preset.aircraftName)}</strong>
+      <span>${escapeHtml(preset.aircraftType)}</span>
+      <div class="preset-specs">
+        <span>${formatNumber(preset.wingspan, 1)} ft span</span>
+        <span>${formatNumber(preset.wingArea, 0)} ft2 wing</span>
+        <span>${formatNumber(preset.passengerCapacity, 0)} seats</span>
+        <span>${formatNumber(preset.maximumRange, 0)} mi</span>
+      </div>
+      <em>${escapeHtml(preset.sourceNote)}</em>
+    </button>
+  `).join("");
+
+  popularAircraftList.querySelectorAll(".preset-aircraft").forEach((button) => {
+    const preset = popularAircraft.find((item) => item.id === button.dataset.presetId);
+    if (!preset) return;
+
+    button.addEventListener("mouseenter", () => previewPreset(preset));
+    button.addEventListener("focus", () => previewPreset(preset));
+    button.addEventListener("mouseleave", () => restorePresetPreview());
+    button.addEventListener("blur", () => restorePresetPreview());
+    button.addEventListener("click", () => lockPreset(preset));
+  });
+}
+
+function previewPreset(preset) {
+  if (!presetHoverSnapshot) presetHoverSnapshot = snapshotFormValues();
+  setFormValues(preset);
+  form.classList.add("is-preset-preview");
+  hideErrors();
+  renderLivePreview();
+}
+
+function restorePresetPreview() {
+  if (!presetHoverSnapshot) return;
+  setFormValues(presetHoverSnapshot);
+  presetHoverSnapshot = null;
+  form.classList.remove("is-preset-preview");
+  hideErrors();
+  renderLivePreview();
+}
+
+function lockPreset(preset) {
+  setFormValues(preset);
+  lockedPresetId = preset.id;
+  presetHoverSnapshot = null;
+  form.classList.remove("is-preset-preview");
+  updatePresetSelection();
+  hideErrors();
+  renderLivePreview();
 }
 
 function handleSubmit(event) {
@@ -122,6 +294,21 @@ function getFormValues() {
     values[id] = numericFields.includes(id) ? Number(element.value) : element.value.trim();
   });
   return values;
+}
+
+function snapshotFormValues() {
+  const values = {};
+  fieldIds.forEach((id) => {
+    values[id] = document.getElementById(id).value;
+  });
+  return values;
+}
+
+function setFormValues(values) {
+  fieldIds.forEach((id) => {
+    const element = document.getElementById(id);
+    element.value = values[id] ?? "";
+  });
 }
 
 function validateAircraft(values, options = {}) {
@@ -175,6 +362,7 @@ function hideErrors() {
 function clearForm() {
   form.reset();
   clearEditState();
+  clearPresetSelection();
   hideErrors();
   renderLivePreview();
 }
@@ -183,6 +371,20 @@ function clearEditState() {
   editingId = null;
   submitButton.innerHTML = `Add Aircraft <span aria-hidden="true">+</span>`;
   cancelEditButton.hidden = true;
+}
+
+function clearPresetSelection() {
+  lockedPresetId = null;
+  presetHoverSnapshot = null;
+  form.classList.remove("is-preset-preview");
+  updatePresetSelection();
+}
+
+function updatePresetSelection() {
+  if (!popularAircraftList) return;
+  popularAircraftList.querySelectorAll(".preset-aircraft").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.presetId === lockedPresetId);
+  });
 }
 
 function renderAll() {
@@ -455,6 +657,7 @@ function editAircraft(id) {
     document.getElementById(field).value = item[field];
   });
   editingId = id;
+  clearPresetSelection();
   submitButton.textContent = "Update Aircraft";
   cancelEditButton.hidden = false;
   hideErrors();
