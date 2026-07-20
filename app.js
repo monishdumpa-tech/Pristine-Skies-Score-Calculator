@@ -558,10 +558,10 @@ function renderScoreStage(rows) {
     <h2>Geometry Efficiency Score</h2>
     <div class="score-aircraft">${escapeHtml(top.aircraftName)}</div>
     <div class="final-score">${formatNumber(result.geometryScore, 1)}<span>/100</span></div>
-    <p><strong>${escapeHtml(result.interpretation)}</strong> is a calculator interpretation, not a certified industry classification.</p>
+    <p><strong>${escapeHtml(result.interpretation)}</strong> is a calculator interpretation, not a certified industry classification. A score of 75 represents the neutral commercial-aircraft benchmark and should not be interpreted like a school grade.</p>
     <div class="score-scale" aria-label="Geometry score scale">
       <span>0</span>
-      <div><i style="left: 50%"></i><b style="width: ${clamp(result.geometryScore, 0, 100)}%"></b></div>
+      <div><i style="left: 75%" title="Neutral benchmark: 75"></i><b style="width: ${clamp(result.geometryScore, 0, 100)}%"></b></div>
       <span>100</span>
     </div>
     ${result.extrapolationWarnings.length ? renderScoreWarnings(result.extrapolationWarnings) : ""}
@@ -609,8 +609,8 @@ function breakdownRow(label, value) {
 function renderFuelValidation(validation, displayFuelUnit) {
   return `
     <div class="validation-card">
-      <h4>Fuel Validation Score</h4>
-      <p>This score is separate from the Geometry Efficiency Score. It compares measured fuel burn with the regression prediction and is not averaged into the geometry score.</p>
+      <h4>Fuel Validation</h4>
+      <p>This score compares reported fuel burn with the model prediction. It is not a second overall aircraft grade and is not included in the geometry rank because cruise conditions, payloads, routes, flight lengths, engine variants, and measurement methods may differ.</p>
       ${breakdownRow("Measured cruise fuel burn", formatFuelBurn(validation.actualFuelBurnGph, displayFuelUnit))}
       ${breakdownRow("Predicted cruise fuel burn", formatFuelBurn(validation.predictedFuelBurnGph, displayFuelUnit))}
       ${breakdownRow("Residual", `${formatSigned(validation.residualPercent, 1)}%`)}
@@ -867,7 +867,7 @@ function exportCsv() {
     "Fuel Ratio",
     "Geometry Improvement Percent",
     "Geometry Efficiency Score",
-    "Fuel Validation Score"
+    "Fuel Validation"
   ];
   const rows = latestScored.rows.filter((row) => row.result).map((row, index) => [
     index + 1,
@@ -951,10 +951,10 @@ function improvementSentence(percent) {
 }
 
 function scoreColor(score) {
-  if (score < 25) return "#bf5a5a";
-  if (score < 40) return "#d28b54";
-  if (score < 60) return "#d4c867";
-  if (score < 75) return "#a7d86d";
+  if (score < 40) return "#bf5a5a";
+  if (score < 55) return "#d28b54";
+  if (score < 70) return "#d4c867";
+  if (score < 80) return "#a7d86d";
   return "#8fdcff";
 }
 

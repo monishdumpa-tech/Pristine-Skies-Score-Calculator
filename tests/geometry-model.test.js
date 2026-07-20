@@ -25,21 +25,26 @@ test("neutral reference case returns expected fuel and score", () => {
   closeTo(result.predictedFuelBurnGph, 797.1975);
   closeTo(result.neutralFuelBurnGph, 797.1975);
   closeTo(result.fuelRatio, 1);
-  closeTo(result.geometryScore, 50);
+  closeTo(result.geometryScore, 75);
 });
 
-test("geometry score calibration points match required curve", () => {
-  closeTo(model.calculateGeometryScoreFromRatio(0.9), 75, 1e-10);
-  closeTo(model.calculateGeometryScoreFromRatio(0.8), 91.1, 0.02);
-  closeTo(model.calculateGeometryScoreFromRatio(1 / 0.9), 25, 1e-10);
+test("recalibrated geometry score calibration points match required curve", () => {
+  closeTo(model.calculateGeometryScoreFromRatio(1), 75, 1e-10);
+  closeTo(model.calculateGeometryScoreFromRatio(0.9), 90, 1e-10);
+  closeTo(model.calculateGeometryScoreFromRatio(0.8), 96.8, 0.06);
+  closeTo(model.calculateGeometryScoreFromRatio(1 / 0.9), 50, 1e-10);
+  assert.ok(model.calculateGeometryScoreFromRatio(0.2) < 100);
+  assert.ok(model.calculateGeometryScoreFromRatio(10) > 0);
 });
 
-test("fuel validation score calibration points match required curve", () => {
+test("recalibrated fuel validation score calibration points match required curve", () => {
   const predicted = 1000;
 
-  closeTo(model.calculateFuelValidationScore(predicted, predicted), 50);
-  closeTo(model.calculateFuelValidationScore(predicted, 0.9 * predicted), 75.3, 0.02);
-  closeTo(model.calculateFuelValidationScore(predicted, 1.1 * predicted), 26.7, 0.05);
+  closeTo(model.calculateFuelValidationScore(predicted, predicted), 75);
+  closeTo(model.calculateFuelValidationScore(predicted, 0.9 * predicted), 90, 0.2);
+  closeTo(model.calculateFuelValidationScore(predicted, predicted / 0.9), 50, 0.5);
+  assert.ok(model.calculateFuelValidationScore(predicted, 0.9 * predicted) > model.calculateFuelValidationScore(predicted, predicted));
+  assert.ok(model.calculateFuelValidationScore(predicted, 1.1 * predicted) < model.calculateFuelValidationScore(predicted, predicted));
 });
 
 test("model is monotonic in the requested directions", () => {
@@ -55,6 +60,40 @@ test("model is monotonic in the requested directions", () => {
   assert.ok(higherSlenderness.predictedFuelBurnGph < base.predictedFuelBurnGph);
   assert.ok(model.calculateGeometryScoreFromRatio(0.9) > model.calculateGeometryScoreFromRatio(1));
   assert.ok(model.calculateGeometryScoreFromRatio(0.8) > model.calculateGeometryScoreFromRatio(0.9));
+  assert.ok(model.calculateGeometryScoreFromRatio(1.1) < model.calculateGeometryScoreFromRatio(1));
+});
+
+test("current preset aircraft ranking remains ordered by geometry score", () => {
+  const rows = [
+    ["Airbus A321neo", 213848, 10.471, 17.35, 44.51 / 3.95, 80.5, 42.4, 928],
+    ["Boeing 737 MAX 8", 181198, 10.159, 17.15, 39.12 / 3.76, 73.2, 74.5, 750],
+    ["Airbus A321ceo", 206132, 9.084, 16.47, 44.51 / 3.95, 71.9, 69.4, 850],
+    ["Boeing 737-800", 174200, 9.423, 16.69, 39.47 / 3.76, 68.7, 41.6, 850],
+    ["Airbus A320ceo", 171961, 10.454, 17.34, 37.57 / 3.95, 67.9, 71.4, 750],
+    ["Airbus A320neo", 174165, 10.454, 17.34, 37.57 / 3.95, 67.9, 90.4, 668],
+    ["Airbus A319ceo", 141095, 9.5, 16.74, 33.84 / 3.95, 50.5, 49.7, 759]
+  ].map(([name, mtowLb, aspectRatio, liftToDragRatio, fuselageSlenderness, expectedGeometry, expectedValidation, actualFuelBurnGph]) => {
+    const result = model.calculateRegressionResult({
+      mtowLb,
+      aspectRatio,
+      liftToDragRatio,
+      fuselageSlenderness,
+      actualFuelBurnGph
+    });
+    return { name, result, expectedGeometry, expectedValidation };
+  });
+
+  rows.forEach((row) => {
+    closeTo(row.result.geometryScore, row.expectedGeometry, 0.15);
+    closeTo(row.result.fuelValidation.score, row.expectedValidation, 0.2);
+  });
+
+  for (let index = 1; index < rows.length; index += 1) {
+    assert.ok(
+      rows[index - 1].result.geometryScore >= rows[index].result.geometryScore,
+      `${rows[index - 1].name} should remain ranked above ${rows[index].name}`
+    );
+  }
 });
 
 test("expanded and wing-quality formulas are equivalent", () => {

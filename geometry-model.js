@@ -20,6 +20,7 @@
     LIFT_TO_DRAG_EXPONENT: -0.236975,
     SLENDERNESS_EXPONENT: -0.373390,
     GEOMETRY_SCORE_EXPONENT: 10.427172663391412,
+    SCORE_BASELINE_MULTIPLIER: 1 / 3,
     REGRESSION_RESIDUAL_SIGMA: 0.103878,
     KG_TO_LB: 2.20462262185,
     US_GALLON_TO_LITER: 3.785411784,
@@ -118,17 +119,19 @@
 
   function calculateGeometryScoreFromRatio(fuelRatio) {
     const ratio = requirePositiveNumber(fuelRatio, "Predicted geometry fuel ratio");
-    return 100 / (1 + Math.pow(ratio, MODEL_CONSTANTS.GEOMETRY_SCORE_EXPONENT));
+    return 100 / (
+      1 + MODEL_CONSTANTS.SCORE_BASELINE_MULTIPLIER *
+      Math.pow(ratio, MODEL_CONSTANTS.GEOMETRY_SCORE_EXPONENT)
+    );
   }
 
   function calculateFuelValidationScore(predictedFuelBurnGph, actualFuelBurnGph) {
     const predicted = requirePositiveNumber(predictedFuelBurnGph, "Predicted cruise fuel burn");
     const actual = requirePositiveNumber(actualFuelBurnGph, "Measured cruise fuel burn");
-    return 100 / (
-      1 + Math.exp(
-        (-Math.log(3) * Math.log(predicted / actual)) / MODEL_CONSTANTS.REGRESSION_RESIDUAL_SIGMA
-      )
+    const residualFactor = Math.exp(
+      (-Math.log(3) * Math.log(predicted / actual)) / MODEL_CONSTANTS.REGRESSION_RESIDUAL_SIGMA
     );
+    return 100 / (1 + MODEL_CONSTANTS.SCORE_BASELINE_MULTIPLIER * residualFactor);
   }
 
   function calculateRegressionResult(input) {
@@ -173,12 +176,13 @@
 
   function interpretGeometryScore(score) {
     if (!isFiniteNumber(score)) return "Unavailable";
-    if (score < 25) return "Poor geometric efficiency";
-    if (score < 40) return "Below-average geometric efficiency";
-    if (score < 60) return "Typical geometric efficiency";
-    if (score < 75) return "Strong geometric efficiency";
-    if (score < 90) return "Excellent geometric efficiency";
-    return "Exceptional geometric efficiency";
+    if (score < 40) return "Very weak";
+    if (score < 55) return "Below benchmark";
+    if (score < 70) return "Competitive";
+    if (score < 80) return "Benchmark-level";
+    if (score < 90) return "Strong";
+    if (score < 97) return "Excellent";
+    return "Exceptional";
   }
 
   function validateRegressionInputs(input) {

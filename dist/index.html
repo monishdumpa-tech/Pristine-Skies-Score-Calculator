@@ -211,7 +211,7 @@
                     <option value="lph">liters/hr</option>
                   </select>
                 </div>
-                <em class="helper">This is only used for the separate Fuel Validation Score. It is not mixed into the Geometry Efficiency Score.</em>
+                <em class="helper">This is only used for the separate Fuel Validation result. It is not mixed into the Geometry Efficiency Score.</em>
               </label>
             </div>
           </section>
@@ -266,7 +266,7 @@
               <th>Predicted Fuel</th>
               <th>Neutral Fuel</th>
               <th>Geometry Score</th>
-              <th>Validation Score</th>
+              <th title="Compares reported fuel burn with the model prediction. It is not included in the aircraft's geometry rank because operating conditions and engine technology may differ.">Fuel Validation</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -328,6 +328,7 @@
             <p><strong>Weight-only R squared:</strong> 0.9708</p>
             <p><strong>Aspect ratio/L-D correlation:</strong> approximately 0.996</p>
             <p>Aspect ratio and estimated maximum lift-to-drag ratio are combined into a balanced wing-quality term Q so the calculator does not count nearly the same aerodynamic information twice.</p>
+            <p>The score curve is centered at 75 because matching the geometry of a typical modern passenger aircraft already represents a capable engineering design. A score of 90 indicates approximately 10% lower regression-predicted fuel burn than the neutral geometry, while a score of 50 indicates approximately 11% higher predicted fuel burn.</p>
             <p class="model-warning">Most of the model's statistical accuracy comes from aircraft weight. The geometry terms explain a smaller portion of the remaining variation and should be interpreted as preliminary relationships rather than proof that changing one feature will directly cause the predicted fuel reduction.</p>
             <p><a href="https://docs.google.com/spreadsheets/d/1LdQnjMfrHjkv13AR2aZ7FXEUurWcBeAjRgf9zmATXsU/edit?gid=0#gid=0" target="_blank" rel="noreferrer">Open the source spreadsheet</a></p>
           </div>
@@ -335,7 +336,7 @@
         <details>
           <summary>Explain it simply</summary>
           <div>
-            <p>Think of every airplane as racing against a fair opponent that weighs exactly the same amount. This prevents a small airplane from automatically winning just because it burns fewer gallons than a huge airplane. The calculator studies patterns from 30 real aircraft and estimates how weight, wing shape, lift-to-drag ratio, and fuselage shape affect fuel use. A score of 50 means the design matches the neutral comparison airplane. A score of 75 means its geometry is predicted to use about 10% less fuel, while extremely strong designs move closer to 100 without automatically receiving a perfect score. This curve is inspired by the style of math-competition scoring used by organizations such as MAA and tournaments such as SMT and BMT: ordinary performance receives an ordinary score, while exceptional performance is progressively harder to achieve. It is inspired by those competitions, not copied from an official scoring formula.</p>
+            <p>Think of every airplane as racing against a fair opponent that weighs exactly the same amount. This prevents a small airplane from automatically winning just because it burns fewer gallons than a huge airplane. The calculator studies patterns from 30 real aircraft and estimates how weight, wing shape, lift-to-drag ratio, and fuselage shape affect fuel use. A score of 75 means the design matches the neutral comparison airplane, using aspect ratio 9.6, maximum L/D 16.8, and fuselage slenderness 11.2. A score of 90 means its geometry is predicted to use about 10% less fuel, while a score of 50 means about 11% higher predicted fuel burn than neutral. This curve is inspired by the style of math-competition scoring used by organizations such as MAA and tournaments such as SMT and BMT: ordinary performance receives a capable score, while exceptional performance is progressively harder to achieve. It is inspired by those competitions, not copied from an official scoring formula.</p>
           </div>
         </details>
         <details>
