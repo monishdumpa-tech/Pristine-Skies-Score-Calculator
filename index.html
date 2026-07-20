@@ -19,7 +19,7 @@
       <a href="#platform">Platform</a>
       <a href="#analysis">Analyze</a>
       <a href="#results">Results</a>
-      <a href="#insights">Insights</a>
+      <a href="#model-info">Model</a>
     </nav>
     <a class="topbar-cta" href="#analysis">Analyze Aircraft</a>
   </header>
@@ -33,12 +33,12 @@
         <div class="hero-frame frame-two"></div>
       </div>
       <div class="hero-content">
-        <span class="section-kicker">Aerospace Sustainability Intelligence</span>
+        <span class="section-kicker">Aerospace Geometry Intelligence</span>
         <h1 id="heroTitle">Engineering the Future of Sustainable Flight</h1>
-        <p>Pristine Skies analyzes raw aircraft specifications using mathematical modeling, normalized performance metrics, and aerospace efficiency scoring to reveal cleaner, higher-performing designs.</p>
+        <p>Pristine Skies estimates cruise fuel burn and geometry efficiency with a same-weight regression model built for transparent aircraft comparison.</p>
         <div class="hero-actions">
           <a class="primary-action" href="#analysis">Analyze Aircraft <span aria-hidden="true">+</span></a>
-          <a class="secondary-action" href="#mission">Explore Mission</a>
+          <a class="secondary-action" href="#model-info">Explore Model</a>
         </div>
       </div>
       <div class="vertical-type" aria-hidden="true">PRISTINE SKIES</div>
@@ -52,33 +52,33 @@
       <div class="mission-grid">
         <article>
           <span>01</span>
-          <h3>Cleaner flight matters</h3>
-          <p>Aircraft efficiency influences fuel demand, emissions intensity, route economics, and the long-term sustainability of global travel.</p>
+          <h3>Compare same-weight aircraft</h3>
+          <p>The score compares every design against a neutral aircraft with the same maximum takeoff weight, so smaller aircraft do not automatically win.</p>
         </article>
         <article>
           <span>02</span>
-          <h3>Design choices compound</h3>
-          <p>Wing loading, aerodynamic efficiency, passenger utilization, fuel burn, and range interact. Small improvements can reshape the total operating profile.</p>
+          <h3>Geometry matters carefully</h3>
+          <p>Aspect ratio, lift-to-drag ratio, and fuselage slenderness are modeled as geometry signals while weight remains the dominant predictor.</p>
         </article>
         <article>
           <span>03</span>
           <h3>Mathematics reveals separation</h3>
-          <p>The scoring system is inspired by mathematical ideas used in advanced academic competitions such as the AMC and AIME: normalization, weighted scoring, relative ranking, nonlinear scaling, performance differentiation, and composite metrics.</p>
+          <p>The scoring curve is inspired by math-competition style normalization, but it is not an official AMC, MAA, SMT, or BMT formula.</p>
         </article>
       </div>
     </section>
 
     <section class="platform-section" id="platform" aria-labelledby="platformTitle">
       <div class="platform-copy">
-        <span class="section-kicker">Aircraft Analysis Platform</span>
-        <h2 id="platformTitle">Enter specifications. Let the platform calculate the aircraft intelligence layer.</h2>
-        <p>Users provide only raw aircraft data. Pristine Skies automatically calculates derived metrics, sustainability analysis, rankings, visualizations, performance insights, and the Final Pristine Skies Score.</p>
+        <span class="section-kicker">Balanced Wing Regression v1</span>
+        <h2 id="platformTitle">Enter geometry. Compare predicted fuel burn against a fair same-weight benchmark.</h2>
+        <p>The model assumes equal engine technology, materials, operating conditions, payload assumptions, cruise conditions, and manufacturing technology. That is a mathematical assumption for fair comparison, not literally true for the historical aircraft used to fit the model.</p>
       </div>
       <div class="platform-stack" aria-label="Platform workflow">
-        <div><strong>Input</strong><span>Raw aircraft specifications</span></div>
-        <div><strong>Analyze</strong><span>Automatic aerospace metrics</span></div>
-        <div><strong>Score</strong><span>Composite efficiency model</span></div>
-        <div><strong>Improve</strong><span>Targeted design insights</span></div>
+        <div><strong>Input</strong><span>Weight, aspect ratio, L/D, fuselage slenderness</span></div>
+        <div><strong>Predict</strong><span>Regression-estimated cruise fuel burn</span></div>
+        <div><strong>Benchmark</strong><span>Same-weight neutral geometry comparison</span></div>
+        <div><strong>Score</strong><span>Smooth 0-100 Geometry Efficiency Score</span></div>
       </div>
     </section>
 
@@ -124,23 +124,31 @@
           <section class="input-group">
             <button class="group-toggle" type="button" aria-expanded="true">
               <span>02</span>
-              Wing &amp; Aerodynamics
+              Weight &amp; Wing Geometry
             </button>
             <div class="group-body">
               <label class="field">
-                <span>Wingspan</span>
-                <small>feet</small>
-                <input id="wingspan" name="wingspan" type="number" min="0" step="0.01" inputmode="decimal" required>
+                <span>Maximum takeoff weight</span>
+                <small>selected unit</small>
+                <div class="unit-field">
+                  <input id="mtow" name="mtow" type="number" min="0" step="0.01" inputmode="decimal" required>
+                  <select id="mtowUnit" name="mtowUnit" aria-label="Maximum takeoff weight unit">
+                    <option value="lb">lb</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
               </label>
               <label class="field">
-                <span>Wing Area</span>
-                <small>square feet</small>
-                <input id="wingArea" name="wingArea" type="number" min="0" step="0.01" inputmode="decimal" required>
+                <span>Wing aspect ratio</span>
+                <small>dimensionless</small>
+                <input id="aspectRatio" name="aspectRatio" type="number" min="0" step="0.001" inputmode="decimal" required>
+                <em class="helper">Aspect ratio measures how long and narrow the wing is. It is commonly calculated as wingspan^2 divided by wing area.</em>
               </label>
               <label class="field">
-                <span>MTOW (Max Take Off Weight)</span>
-                <small>pounds</small>
-                <input id="aircraftWeight" name="aircraftWeight" type="number" min="0" step="1" inputmode="decimal" required>
+                <span>Maximum lift-to-drag ratio</span>
+                <small>dimensionless</small>
+                <input id="liftToDragRatio" name="liftToDragRatio" type="number" min="0" step="0.01" inputmode="decimal" required>
+                <em class="helper">A higher L/D means the aircraft produces more lift for the same amount of aerodynamic drag.</em>
               </label>
             </div>
           </section>
@@ -148,51 +156,62 @@
           <section class="input-group">
             <button class="group-toggle" type="button" aria-expanded="true">
               <span>03</span>
-              Fuel Data
+              Fuselage Slenderness
             </button>
             <div class="group-body">
-              <label class="field">
-                <span>Total Fuel Burn</span>
-                <small>gallons per hour</small>
-                <input id="totalFuelBurn" name="totalFuelBurn" type="number" min="0" step="0.01" inputmode="decimal" required>
+              <label class="field wide">
+                <span>Slenderness source</span>
+                <small>one source of truth</small>
+                <select id="slendernessMode" name="slendernessMode">
+                  <option value="direct">Enter ratio directly</option>
+                  <option value="dimensions">Calculate from fuselage dimensions</option>
+                </select>
+                <em class="helper">This prevents contradictory values. Length and width must use the same unit. Never use overall aircraft height as the denominator.</em>
               </label>
-              <label class="field">
-                <span>Passenger Capacity</span>
-                <small>seats</small>
-                <input id="passengerCapacity" name="passengerCapacity" type="number" min="0" step="1" inputmode="numeric" required>
-              </label>
+              <div class="field wide" data-slenderness-panel="direct">
+                <label class="field">
+                  <span>Fuselage slenderness ratio</span>
+                  <small>dimensionless</small>
+                  <input id="fuselageSlenderness" name="fuselageSlenderness" type="number" min="0" step="0.001" inputmode="decimal">
+                  <em class="helper">This compares fuselage length with fuselage width. A higher value represents a longer, narrower fuselage.</em>
+                </label>
+              </div>
+              <div class="dimension-panel wide" data-slenderness-panel="dimensions" hidden>
+                <label class="field">
+                  <span>Fuselage length</span>
+                  <small>same unit as width</small>
+                  <input id="fuselageLength" name="fuselageLength" type="number" min="0" step="0.01" inputmode="decimal">
+                </label>
+                <label class="field">
+                  <span>Maximum fuselage width</span>
+                  <small>same unit as length</small>
+                  <input id="fuselageWidth" name="fuselageWidth" type="number" min="0" step="0.01" inputmode="decimal">
+                </label>
+                <div class="calculated-ratio">
+                  <span>Calculated ratio</span>
+                  <strong id="calculatedSlenderness">--</strong>
+                </div>
+              </div>
             </div>
           </section>
 
           <section class="input-group">
             <button class="group-toggle" type="button" aria-expanded="true">
               <span>04</span>
-              CO₂ Emissions Data
+              Optional Fuel Validation
             </button>
             <div class="group-body">
-              <label class="field">
-                <span>Total CO₂ Output</span>
-                <small>kilograms</small>
-                <input id="totalCo2Output" name="totalCo2Output" type="number" min="0" step="0.01" inputmode="decimal" required>
-              </label>
-            </div>
-          </section>
-
-          <section class="input-group">
-            <button class="group-toggle" type="button" aria-expanded="true">
-              <span>05</span>
-              Performance Data
-            </button>
-            <div class="group-body">
-              <label class="field">
-                <span>Cruise Speed</span>
-                <small>miles per hour</small>
-                <input id="cruiseSpeed" name="cruiseSpeed" type="number" min="0" step="0.01" inputmode="decimal" required>
-              </label>
-              <label class="field">
-                <span>Maximum Range</span>
-                <small>miles</small>
-                <input id="maximumRange" name="maximumRange" type="number" min="0" step="0.01" inputmode="decimal" required>
+              <label class="field wide">
+                <span>Measured cruise fuel burn</span>
+                <small>optional validation only</small>
+                <div class="unit-field">
+                  <input id="actualFuelBurn" name="actualFuelBurn" type="number" min="0" step="0.01" inputmode="decimal">
+                  <select id="fuelBurnUnit" name="fuelBurnUnit" aria-label="Measured cruise fuel burn unit">
+                    <option value="gph">US gal/hr</option>
+                    <option value="lph">liters/hr</option>
+                  </select>
+                </div>
+                <em class="helper">This is only used for the separate Fuel Validation Score. It is not mixed into the Geometry Efficiency Score.</em>
               </label>
             </div>
           </section>
@@ -206,8 +225,8 @@
         </form>
 
         <aside class="live-panel" aria-labelledby="liveMetricsTitle">
-          <span class="section-kicker">Live Calculated Metrics</span>
-          <h3 id="liveMetricsTitle">Aircraft intelligence updates as you type.</h3>
+          <span class="section-kicker">Live Regression Metrics</span>
+          <h3 id="liveMetricsTitle">Geometry intelligence updates as you type.</h3>
           <div class="metric-list" id="liveMetrics"></div>
         </aside>
       </div>
@@ -216,7 +235,7 @@
     <section class="score-stage" id="results" aria-labelledby="scoreTitle">
       <div class="score-summary" id="scoreSummary">
         <span class="section-kicker">Final Output</span>
-        <h2 id="scoreTitle">Final Pristine Skies Score</h2>
+        <h2 id="scoreTitle">Geometry Efficiency Score</h2>
         <div class="empty-state">No aircraft data available yet.</div>
       </div>
       <div class="score-breakdown" id="scoreBreakdown"></div>
@@ -226,7 +245,7 @@
       <div class="section-header">
         <div>
           <span class="section-kicker">Aircraft Comparison</span>
-          <h2 id="comparisonTitle">Fleet Ranking</h2>
+          <h2 id="comparisonTitle">Geometry Ranking</h2>
         </div>
         <div class="utility-actions">
           <button class="ghost-button" type="button" id="exportCsvButton">Export CSV</button>
@@ -240,20 +259,19 @@
             <tr>
               <th>Rank</th>
               <th>Aircraft Name</th>
-              <th>Glide Ratio</th>
+              <th>MTOW</th>
               <th>Aspect Ratio</th>
-              <th>Wing Loading</th>
-              <th>Fuel / Passenger-Mile</th>
-              <th>CO₂ / Passenger-Mile</th>
-              <th>Maximum Range</th>
-              <th>Composite Score</th>
-              <th>Performance Separation</th>
-              <th>Final Score</th>
+              <th>L/D</th>
+              <th>Fuselage Ratio</th>
+              <th>Predicted Fuel</th>
+              <th>Neutral Fuel</th>
+              <th>Geometry Score</th>
+              <th>Validation Score</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="aircraftTableBody">
-            <tr><td colspan="12">No aircraft data available yet.</td></tr>
+            <tr><td colspan="11">No aircraft data available yet.</td></tr>
           </tbody>
         </table>
       </div>
@@ -263,30 +281,78 @@
       <div class="section-header">
         <div>
           <span class="section-kicker">Visualizations</span>
-          <h2 id="visualTitle">Performance Landscape</h2>
+          <h2 id="visualTitle">Regression Landscape</h2>
         </div>
       </div>
       <div class="chart-feature">
-        <h3>Final Score Comparison</h3>
-        <canvas id="finalScoreChart" aria-label="Final Score Comparison"></canvas>
+        <h3>Geometry Score Comparison</h3>
+        <canvas id="finalScoreChart" aria-label="Geometry Score Comparison"></canvas>
       </div>
       <div class="chart-grid">
         <article>
-          <h3>Composite Score Comparison</h3>
-          <canvas id="compositeScoreChart" aria-label="Composite Score Comparison"></canvas>
+          <h3>Predicted Cruise Fuel Burn</h3>
+          <canvas id="compositeScoreChart" aria-label="Predicted Cruise Fuel Burn"></canvas>
         </article>
         <article>
-          <h3>Glide Ratio vs Fuel Efficiency</h3>
-          <canvas id="glideFuelChart" aria-label="Glide Ratio vs Fuel Efficiency"></canvas>
+          <h3>Wing Quality vs Geometry Score</h3>
+          <canvas id="glideFuelChart" aria-label="Wing Quality vs Geometry Score"></canvas>
         </article>
         <article>
-          <h3>Wing Loading vs Final Score</h3>
-          <canvas id="wingFinalChart" aria-label="Wing Loading vs Final Score"></canvas>
+          <h3>MTOW vs Predicted Fuel Burn</h3>
+          <canvas id="wingFinalChart" aria-label="MTOW vs Predicted Fuel Burn"></canvas>
         </article>
         <article>
-          <h3>CO₂ Efficiency vs Final Score</h3>
-          <canvas id="co2FinalChart" aria-label="CO₂ Efficiency vs Final Score"></canvas>
+          <h3>Fuselage Slenderness vs Geometry Score</h3>
+          <canvas id="co2FinalChart" aria-label="Fuselage Slenderness vs Geometry Score"></canvas>
         </article>
+      </div>
+    </section>
+
+    <section class="model-section" id="model-info" aria-labelledby="modelTitle">
+      <div class="section-header">
+        <div>
+          <span class="section-kicker">Model Information</span>
+          <h2 id="modelTitle">Regression transparency</h2>
+        </div>
+      </div>
+      <div class="details-grid">
+        <details open>
+          <summary>About the regression model</summary>
+          <div>
+            <p><strong>Model version:</strong> Balanced Wing Regression v1</p>
+            <p><strong>Dataset size:</strong> 30 passenger aircraft</p>
+            <p><strong>Regression type:</strong> logarithmic power regression</p>
+            <p><strong>R squared:</strong> 0.9762 on logarithmic fuel burn</p>
+            <p><strong>Adjusted R squared:</strong> 0.9735</p>
+            <p><strong>Leave-one-out estimated error:</strong> approximately 9.07%</p>
+            <p><strong>Weight-only R squared:</strong> 0.9708</p>
+            <p><strong>Aspect ratio/L-D correlation:</strong> approximately 0.996</p>
+            <p>Aspect ratio and estimated maximum lift-to-drag ratio are combined into a balanced wing-quality term Q so the calculator does not count nearly the same aerodynamic information twice.</p>
+            <p class="model-warning">Most of the model's statistical accuracy comes from aircraft weight. The geometry terms explain a smaller portion of the remaining variation and should be interpreted as preliminary relationships rather than proof that changing one feature will directly cause the predicted fuel reduction.</p>
+            <p><a href="https://docs.google.com/spreadsheets/d/1LdQnjMfrHjkv13AR2aZ7FXEUurWcBeAjRgf9zmATXsU/edit?gid=0#gid=0" target="_blank" rel="noreferrer">Open the source spreadsheet</a></p>
+          </div>
+        </details>
+        <details>
+          <summary>Explain it simply</summary>
+          <div>
+            <p>Think of every airplane as racing against a fair opponent that weighs exactly the same amount. This prevents a small airplane from automatically winning just because it burns fewer gallons than a huge airplane. The calculator studies patterns from 30 real aircraft and estimates how weight, wing shape, lift-to-drag ratio, and fuselage shape affect fuel use. A score of 50 means the design matches the neutral comparison airplane. A score of 75 means its geometry is predicted to use about 10% less fuel, while extremely strong designs move closer to 100 without automatically receiving a perfect score. This curve is inspired by the style of math-competition scoring used by organizations such as MAA and tournaments such as SMT and BMT: ordinary performance receives an ordinary score, while exceptional performance is progressively harder to achieve. It is inspired by those competitions, not copied from an official scoring formula.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Limitations and validity ranges</summary>
+          <div>
+            <p>The source dataset covers approximately MTOW 48,501-1,268,000 lb, aspect ratio 7.527-11.327, estimated maximum L/D 15.40-17.78, and fuselage slenderness 8.567-14.106. Inputs outside those ranges are allowed, but the calculator marks them as extrapolations. For an approximately 180-passenger aircraft, comparisons with similarly sized narrowbody aircraft are more defensible than comparisons spanning everything from regional jets to the A380.</p>
+            <ul>
+              <li>Fuel-burn figures in the source sheet are approximate.</li>
+              <li>Real aircraft use different engines, materials, technologies, configurations, routes, speeds, and operating procedures.</li>
+              <li>The historical dataset does not truly hold everything else constant.</li>
+              <li>The formula shows statistical association, not guaranteed causation.</li>
+              <li>Estimated L/D values are not equivalent to wind-tunnel, CFD, or flight-test measurements.</li>
+              <li>The model should not be used for certification, safety decisions, or final engineering design.</li>
+              <li>New designs should eventually be validated using CFD, wind-tunnel testing, physical glide tests, or reliable published aerodynamic data.</li>
+            </ul>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -301,6 +367,7 @@
     </section>
   </main>
 
+  <script src="geometry-model.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

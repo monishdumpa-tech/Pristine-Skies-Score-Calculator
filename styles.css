@@ -46,7 +46,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -453,6 +454,7 @@ button:disabled {
 .analysis-section,
 .comparison-section,
 .visual-section,
+.model-section,
 .insights-section {
   width: min(var(--max), calc(100% - 48px));
   margin: 0 auto;
@@ -704,7 +706,8 @@ button:disabled {
   text-transform: uppercase;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 52px;
   border: 1px solid rgba(213, 243, 255, 0.16);
@@ -716,9 +719,64 @@ input {
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-input:focus {
+select {
+  cursor: pointer;
+}
+
+input:focus,
+select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(143, 220, 255, 0.18);
+}
+
+.unit-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.34fr);
+  gap: 10px;
+}
+
+.helper {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.dimension-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  grid-column: 1 / -1;
+}
+
+.dimension-panel[hidden],
+[data-slenderness-panel][hidden] {
+  display: none;
+}
+
+.calculated-ratio {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-height: 86px;
+  padding: 16px;
+  border: 1px solid rgba(213, 243, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(8, 15, 21, 0.72);
+}
+
+.calculated-ratio span {
+  color: var(--dim);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.calculated-ratio strong {
+  color: var(--text);
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 1.7rem;
 }
 
 .aircraft-form.is-preset-preview input {
@@ -743,6 +801,30 @@ input:focus {
 .error-box ul {
   margin: 0;
   padding-left: 20px;
+}
+
+.warning-box {
+  padding: 14px 16px;
+  border: 1px solid rgba(211, 159, 72, 0.34);
+  border-left: 3px solid #d39f48;
+  border-radius: 16px;
+  color: #ffe3b1;
+  background: rgba(211, 159, 72, 0.11);
+  line-height: 1.5;
+}
+
+.warning-box strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.warning-box ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.metric-warning {
+  grid-column: 1 / -1;
 }
 
 .live-panel {
@@ -848,10 +930,58 @@ input:focus {
   line-height: 0.9;
 }
 
+.final-score span {
+  margin-left: 8px;
+  color: #343c38;
+  font-size: 1.6rem;
+}
+
 .score-summary p {
   max-width: 380px;
   margin-top: 30px;
   color: #313834;
+}
+
+.score-scale {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 28px;
+  color: #303834;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.score-scale div {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #bf5a5a 0%, #d4c867 50%, #8fdcff 100%);
+}
+
+.score-scale b,
+.score-scale i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: block;
+}
+
+.score-scale b {
+  left: 0;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.score-scale i {
+  width: 2px;
+  background: #09110d;
+  opacity: 0.8;
+}
+
+.score-warning {
+  margin-top: 22px;
 }
 
 .score-breakdown {
@@ -863,6 +993,20 @@ input:focus {
   font-size: 1.12rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.calculation-details summary {
+  cursor: pointer;
+  color: var(--paper-text);
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.calculation-details > div {
+  margin-top: 18px;
 }
 
 .breakdown-row {
@@ -895,8 +1039,42 @@ input:focus {
   text-align: right;
 }
 
+.detail-row {
+  grid-template-columns: minmax(170px, 0.62fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.detail-row strong {
+  color: #111512;
+  text-align: left;
+  white-space: normal;
+}
+
+.validation-card {
+  margin-top: 26px;
+  padding: 22px;
+  border: 1px solid rgba(11, 13, 12, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.validation-card h4 {
+  margin: 0 0 10px;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.validation-card p {
+  margin-bottom: 16px;
+  color: #313834;
+  font-size: 0.9rem;
+}
+
 .comparison-section,
 .visual-section,
+.model-section,
 .insights-section {
   padding-bottom: 110px;
 }
@@ -912,7 +1090,7 @@ input:focus {
 
 table {
   width: 100%;
-  min-width: 1320px;
+  min-width: 1280px;
   border-collapse: collapse;
   background: rgba(7, 12, 17, 0.72);
 }
@@ -1023,6 +1201,70 @@ canvas {
   height: 330px;
 }
 
+.model-section {
+  padding-bottom: 116px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.details-grid details {
+  min-width: 0;
+  border: 1px solid rgba(213, 243, 255, 0.15);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(145deg, rgba(143, 220, 255, 0.095), transparent 34%),
+    rgba(7, 12, 17, 0.72);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+
+.details-grid summary {
+  cursor: pointer;
+  padding: 24px 26px;
+  color: var(--text);
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.details-grid details > div {
+  padding: 0 26px 26px;
+}
+
+.details-grid p,
+.details-grid li {
+  color: #d9e4dd;
+  font-size: 0.93rem;
+  line-height: 1.72;
+}
+
+.details-grid p {
+  margin-bottom: 12px;
+}
+
+.details-grid ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.details-grid a {
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.model-warning {
+  padding: 14px 16px;
+  border-left: 3px solid var(--green);
+  border-radius: 16px;
+  background: rgba(143, 220, 255, 0.11);
+}
+
 .insights-section {
   display: grid;
   grid-template-columns: minmax(300px, 0.45fr) minmax(0, 1fr);
@@ -1095,6 +1337,7 @@ canvas {
   .platform-section,
   .analysis-layout,
   .score-stage,
+  .details-grid,
   .insights-section {
     grid-template-columns: 1fr;
   }
@@ -1162,6 +1405,7 @@ canvas {
   .analysis-section,
   .comparison-section,
   .visual-section,
+  .model-section,
   .insights-section,
   .score-stage {
     width: calc(100% - 28px);
@@ -1189,8 +1433,13 @@ canvas {
   }
 
   .group-body,
+  .dimension-panel,
   .metric-list,
   .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unit-field {
     grid-template-columns: 1fr;
   }
 

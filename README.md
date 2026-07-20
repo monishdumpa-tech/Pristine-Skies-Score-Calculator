@@ -1,6 +1,6 @@
 # Pristine Skies
 
-A premium aerospace sustainability analysis platform for comparing aircraft using raw specifications, automatic derived metrics, composite efficiency scoring, visualizations, and smart performance insights.
+A premium aerospace sustainability analysis platform for comparing aircraft geometry with a same-weight regression model, predicted cruise fuel burn, optional actual-vs-predicted fuel validation, visualizations, and smart performance insights.
 
 ## Run Locally
 
@@ -26,6 +26,6 @@ The build copies the static site and assets into `dist`, which is configured as 
 
 ## Core Workflow
 
-1. Enter raw aircraft specifications.
+1. Enter aircraft weight, wing aspect ratio, maximum lift-to-drag ratio, and fuselage slenderness.
 2. Add the aircraft.
-3. Review calculated metrics, rankings, charts, insights, and the Final Pristine Skies Score.
+3. Review predicted fuel burn, the neutral same-weight benchmark, Geometry Efficiency Score, rankings, charts, and model limitations.
