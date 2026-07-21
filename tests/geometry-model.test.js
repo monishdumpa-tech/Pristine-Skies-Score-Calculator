@@ -28,6 +28,20 @@ test("neutral reference case returns expected fuel and score", () => {
   closeTo(result.geometryScore, 75);
 });
 
+test("Pristine Skies Prototype 1 displays the maximum geometry score", () => {
+  const result = model.calculateRegressionResult({
+    mtowLb: 200000,
+    aspectRatio: 24,
+    liftToDragRatio: 30,
+    fuselageSlenderness: 60 / 2.5,
+    actualFuelBurnGph: 420.728
+  });
+
+  closeTo(result.predictedFuelBurnGph, 420.728, 0.001);
+  assert.equal(result.geometryScore.toFixed(1), "100.0");
+  assert.equal(result.interpretation, "Exceptional");
+});
+
 test("recalibrated geometry score calibration points match required curve", () => {
   closeTo(model.calculateGeometryScoreFromRatio(1), 75, 1e-10);
   closeTo(model.calculateGeometryScoreFromRatio(0.9), 90, 1e-10);
