@@ -14,7 +14,7 @@
 
   if (reducedMotion.matches) return;
   const elements = document.querySelectorAll(
-    ".landing-brand, .landing-manifesto, .landing-scroll, .flight-intro h2, " +
+    ".landing-brand, .landing-manifesto, .flight-intro h2, " +
     ".flight-intro .section-kicker, .intro-detail, .mission-copy, .mission-grid article, " +
     ".platform-copy, .platform-stack, .analysis-heading, .section-header, .insights-section > div:first-child"
   );
