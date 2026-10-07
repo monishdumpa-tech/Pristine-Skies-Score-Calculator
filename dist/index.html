@@ -27,22 +27,32 @@
 
   <main id="top">
     <section class="hero-section" aria-labelledby="heroTitle">
-      <div class="hero-media" aria-hidden="true">
-        <img src="assets/pristine-skies-clouds-4k.webp" alt="" fetchpriority="high">
-        <div class="hero-shade"></div>
-        <div class="hero-frame frame-one"></div>
-        <div class="hero-frame frame-two"></div>
+      <div class="landing-brand">
+        <h1 id="heroTitle">PRISTINE SKIES</h1>
+        <p>// Aerospace geometry intelligence</p>
       </div>
-      <div class="hero-content">
+      <div class="landing-aircraft">
+        <img src="assets/pristine-skies-aircraft.webp" alt="A silver passenger aircraft in flight above the clouds" fetchpriority="high" decoding="async">
+      </div>
+      <aside class="landing-manifesto" aria-label="Our mission">
+        <span>////// Our mission</span>
+        <p>Understand flight.<br>Measure what matters.<br>Imagine cleaner skies.</p>
+      </aside>
+      <a class="landing-scroll" href="#introduction">Scroll down to discover <span aria-hidden="true">&#8595;</span></a>
+    </section>
+
+    <section class="flight-intro" id="introduction" aria-labelledby="introTitle">
+      <div>
         <span class="section-kicker">Aerospace Geometry Intelligence</span>
-        <h1 id="heroTitle">Engineering the Future of Sustainable Flight</h1>
+        <h2 id="introTitle">Engineering the Future of Sustainable Flight</h2>
+      </div>
+      <div class="intro-detail">
         <p>Pristine Skies estimates cruise fuel burn and geometry efficiency with a same-weight regression model built for transparent aircraft comparison.</p>
         <div class="hero-actions">
           <a class="primary-action" href="#analysis">Analyze Aircraft <span aria-hidden="true">+</span></a>
           <a class="secondary-action" href="#model-info">Explore Model</a>
         </div>
       </div>
-      <div class="vertical-type" aria-hidden="true">PRISTINE SKIES</div>
     </section>
 
     <section class="mission-section" id="mission" aria-labelledby="missionTitle">
@@ -371,5 +381,6 @@
 
   <script src="geometry-model.js"></script>
   <script src="app.js"></script>
+  <script src="landing.js"></script>
 </body>
 </html>

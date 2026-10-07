@@ -178,6 +178,82 @@ button:disabled { opacity: 0.5; }
 .score-summary .empty-state { color: var(--muted); }
 [hidden] { display: none !important; }
 
+/* A quiet first screen gives the aircraft and sky room to carry the scene. */
+.topbar { transition: opacity 600ms ease, transform 600ms ease; }
+body.landing-view .topbar { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px); }
+.hero-section {
+  min-height: 0;
+  height: calc(100svh - 24px);
+  max-height: 1400px;
+  padding: 0;
+  position: relative;
+}
+.landing-brand, .landing-manifesto, .landing-scroll { position: absolute; z-index: 2; }
+.landing-brand { top: 56px; left: 5%; max-width: 340px; }
+.landing-brand h1 { margin: 0 0 14px; font-size: 1.85rem; line-height: 1.15; max-width: none; }
+.landing-brand p { margin: 0; font-size: 0.66rem; color: #e2e9f4; }
+.landing-manifesto { top: 62px; right: 5%; width: 210px; text-align: right; }
+.landing-manifesto span { font-size: 0.67rem; color: #d0d9e7; }
+.landing-manifesto p { margin-top: 18px; font-size: 0.76rem; line-height: 1.5; color: #f0f4fb; }
+.landing-aircraft {
+  position: absolute;
+  inset: 16% 8% 9%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.landing-aircraft img { width: 100%; height: 100%; object-fit: contain; }
+.landing-scroll {
+  bottom: 56px;
+  left: 5%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+  color: #eef4ff;
+  font-size: 0.74rem;
+  text-shadow: 0 1px 8px rgba(15, 26, 44, 0.8);
+}
+.landing-scroll span { font-size: 1.5rem; }
+.flight-intro {
+  width: min(var(--max), calc(100% - 48px));
+  margin: 0 auto;
+  padding: 110px 0 120px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: 80px;
+  align-items: center;
+}
+.flight-intro h2 { margin-bottom: 0; }
+.intro-detail p { color: #e6edf8; font-size: 0.93rem; line-height: 1.8; }
+.intro-detail .hero-actions { flex-wrap: wrap; gap: 12px; }
+.mission-section { margin-top: 0; }
+.reveal-text { opacity: 0; transform: translateY(12px); transition: opacity 1600ms ease, transform 1600ms cubic-bezier(0.2, 0.6, 0.3, 1); }
+.reveal-text.is-revealed { opacity: 1; transform: none; }
+.landing-brand.reveal-text { transition-delay: 120ms; }
+.landing-manifesto.reveal-text { transition-delay: 450ms; }
+.landing-scroll.reveal-text { transition-delay: 750ms; }
+
+@media (max-width: 1180px) {
+  .flight-intro { gap: 36px; }
+}
+@media (max-width: 820px) {
+  .landing-brand { top: 32px; left: 24px; right: 24px; }
+  .landing-brand h1 { font-size: 1.35rem; }
+  .landing-brand p { font-size: 0.58rem; }
+  .landing-manifesto { top: 132px; right: 24px; width: 185px; }
+  .landing-manifesto p { font-size: 0.65rem; margin-top: 12px; }
+  .landing-aircraft { inset: 28% 0 14%; }
+  .landing-scroll { left: 24px; bottom: 42px; font-size: 0.67rem; }
+  .flight-intro { width: calc(100% - 48px); grid-template-columns: 1fr; padding: 80px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal-text, .reveal-text.is-revealed { opacity: 1; transform: none; transition: none; }
+  .topbar { transition: none; }
+}
+
 @media (max-width: 1180px) {
   h1 { font-size: 3.6rem; }
   h2 { font-size: 2.25rem; }
