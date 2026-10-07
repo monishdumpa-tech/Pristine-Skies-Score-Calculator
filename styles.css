@@ -353,21 +353,6 @@ button:disabled {
   line-height: 0.8;
 }
 
-.vertical-type {
-  position: absolute;
-  left: max(12px, calc((100vw - var(--max)) / 2 - 34px));
-  top: 130px;
-  z-index: 2;
-  writing-mode: vertical-rl;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.12);
-  font-family: Barlow, sans-serif;
-  font-size: 5.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 0.8;
-}
-
 .mission-section {
   position: relative;
   display: grid;
@@ -1396,7 +1381,6 @@ canvas {
   }
 
   .hero-number,
-  .vertical-type,
   .hero-frame {
     display: none;
   }
