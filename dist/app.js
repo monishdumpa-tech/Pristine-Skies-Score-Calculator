@@ -749,14 +749,14 @@ function drawBarChart(canvasId, rows, accessor, forcedMax, valueLabel) {
     ctx.fillStyle = valueLabel.includes("Score") ? scoreColor(row.result.geometryScore) : "#8fdcff";
     ctx.fillRect(x, y, barWidth, h);
     ctx.fillStyle = "#f6fff8";
-    ctx.font = "600 13px Inter, sans-serif";
+    ctx.font = "600 13px Barlow, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(formatNumber(value, valueLabel.includes("Fuel") ? 0 : 1), x + barWidth / 2, y - 8);
     ctx.save();
     ctx.translate(x + barWidth / 2, height - 22);
     ctx.rotate(-Math.PI / 5);
     ctx.fillStyle = "#b9c2bd";
-    ctx.font = "500 12px Inter, sans-serif";
+    ctx.font = "500 12px Barlow, sans-serif";
     ctx.fillText(shortName(row.aircraftName), 0, 0);
     ctx.restore();
   });
@@ -794,7 +794,7 @@ function drawScatterChart(canvasId, rows, xAccessor, yAccessor, xLabel, yLabel) 
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = "#eef7f1";
-    ctx.font = "500 11px Inter, sans-serif";
+    ctx.font = "500 11px Barlow, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(shortName(row.aircraftName), x + 9, y - 8);
   });
@@ -816,7 +816,7 @@ function clearCanvas(ctx, width, height) {
 
 function drawEmpty(ctx, width, height) {
   ctx.fillStyle = "#a7aaa7";
-  ctx.font = "500 14px Inter, sans-serif";
+  ctx.font = "500 14px Barlow, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("No aircraft data available yet.", width / 2, height / 2);
 }
@@ -827,7 +827,7 @@ function drawGrid(ctx, margin, width, height, minY, maxY) {
   ctx.strokeStyle = "rgba(255,255,255,0.12)";
   ctx.lineWidth = 1;
   ctx.fillStyle = "#8e9691";
-  ctx.font = "11px Inter, sans-serif";
+  ctx.font = "11px Barlow, sans-serif";
   ctx.textAlign = "right";
 
   for (let i = 0; i <= 4; i += 1) {
@@ -843,7 +843,7 @@ function drawGrid(ctx, margin, width, height, minY, maxY) {
 
 function drawAxisLabels(ctx, width, height, xLabel, yLabel) {
   ctx.fillStyle = "#cbd3ce";
-  ctx.font = "600 12px Inter, sans-serif";
+  ctx.font = "600 12px Barlow, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(xLabel, width / 2, height - 14);
   ctx.save();
