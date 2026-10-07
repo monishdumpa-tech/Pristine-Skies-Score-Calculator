@@ -5,7 +5,7 @@ const path = require("path");
 
 const root = __dirname;
 const dist = path.join(root, "dist");
-const files = ["index.html", "styles.css", "geometry-model.js", "app.js"];
+const files = ["index.html", "styles.css", "arctic-theme.css", "geometry-model.js", "app.js"];
 const assetSource = path.join(root, "assets");
 const assetDestination = path.join(dist, "assets");
 
