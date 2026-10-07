@@ -747,18 +747,33 @@ function drawBarChart(canvasId, rows, accessor, forcedMax, valueLabel) {
     const h = (value / maxValue) * chartHeight;
     const y = margin.top + chartHeight - h;
     ctx.fillStyle = valueLabel.includes("Score") ? scoreColor(row.result.geometryScore) : "#d4dfef";
-    ctx.fillRect(x, y, barWidth, h);
-    ctx.fillStyle = "#f6fff8";
+    ctx.save();
+    ctx.shadowColor = "rgba(225, 240, 255, 0.5)";
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.roundRect(x + barWidth * 0.12, y, barWidth * 0.76, h, Math.min(18, barWidth * 0.38, h / 2));
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = "#f5f8ff";
     ctx.font = "600 13px IBM Plex Mono, monospace";
     ctx.textAlign = "center";
     ctx.fillText(formatNumber(value, valueLabel.includes("Fuel") ? 0 : 1), x + barWidth / 2, y - 8);
-    ctx.save();
-    ctx.translate(x + barWidth / 2, height - 22);
-    ctx.rotate(-Math.PI / 5);
-    ctx.fillStyle = "#b9c2bd";
-    ctx.font = "500 12px IBM Plex Mono, monospace";
-    ctx.fillText(shortName(row.aircraftName), 0, 0);
-    ctx.restore();
+    ctx.fillStyle = "#e0e8f5";
+    ctx.font = "500 10px IBM Plex Mono, monospace";
+    const lines = [""];
+    row.aircraftName.split(/\s+/).forEach((word) => {
+      const last = lines.length - 1;
+      const candidate = lines[last] ? `${lines[last]} ${word}` : word;
+      if (lines[last] && ctx.measureText(candidate).width > barWidth + gap - 6) lines.push(word);
+      else lines[last] = candidate;
+    });
+    lines.slice(0, 5).forEach((line, lineIndex) => {
+      ctx.fillText(line, x + barWidth / 2, margin.top + chartHeight + 20 + lineIndex * 12);
+    });
   });
 }
 
@@ -783,20 +798,41 @@ function drawScatterChart(canvasId, rows, xAccessor, yAccessor, xLabel, yLabel) 
   drawGrid(ctx, margin, width, height, yRange.min, yRange.max);
   drawAxisLabels(ctx, width, height, xLabel, yLabel);
 
+  const labelBounds = [];
   rows.forEach((row, index) => {
     const x = margin.left + ((xAccessor(row) - xRange.min) / (xRange.max - xRange.min)) * chartWidth;
     const y = margin.top + chartHeight - ((yAccessor(row) - yRange.min) / (yRange.max - yRange.min)) * chartHeight;
+    ctx.save();
     ctx.beginPath();
-    ctx.arc(x, y, index === 0 ? 7 : 5.5, 0, Math.PI * 2);
+    ctx.arc(x, y, index === 0 ? 9 : 7, 0, Math.PI * 2);
     ctx.fillStyle = scoreColor(row.result.geometryScore);
+    ctx.shadowColor = "rgba(228, 242, 255, 0.85)";
+    ctx.shadowBlur = 18;
     ctx.fill();
     ctx.strokeStyle = "rgba(255,255,255,0.82)";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.fillStyle = "#eef7f1";
+    ctx.restore();
+    ctx.fillStyle = "#f1f6ff";
     ctx.font = "500 11px IBM Plex Mono, monospace";
     ctx.textAlign = "left";
-    ctx.fillText(shortName(row.aircraftName), x + 9, y - 8);
+    const label = shortName(row.aircraftName);
+    const labelWidth = Math.min(ctx.measureText(label).width, chartWidth);
+    const labelX = Math.max(margin.left, Math.min(x + 13, width - margin.right - labelWidth));
+    let labelY = y - 14;
+    // Try nearby label positions without letting names overlap or leave the plot.
+    for (const offset of [-14, 23, -32, 41, -50, 59]) {
+      const candidateY = Math.max(margin.top + 12, Math.min(y + offset, height - margin.bottom - 4));
+      if (!labelBounds.some((box) => labelX < box.right + 6 && labelX + labelWidth > box.left - 6 && candidateY - 12 < box.bottom + 4 && candidateY > box.top - 4)) {
+        labelY = candidateY;
+        break;
+      }
+    }
+    labelBounds.push({ left: labelX, right: labelX + labelWidth, top: labelY - 12, bottom: labelY });
+    ctx.shadowColor = "rgba(17, 29, 48, 0.9)";
+    ctx.shadowBlur = 5;
+    ctx.fillText(label, labelX, labelY, chartWidth);
+    ctx.shadowBlur = 0;
   });
 }
 
@@ -815,7 +851,7 @@ function clearCanvas(ctx, width, height) {
 }
 
 function drawEmpty(ctx, width, height) {
-  ctx.fillStyle = "#a7aaa7";
+  ctx.fillStyle = "#e0e8f5";
   ctx.font = "500 14px IBM Plex Mono, monospace";
   ctx.textAlign = "center";
   ctx.fillText("No aircraft data available yet.", width / 2, height / 2);
@@ -824,9 +860,9 @@ function drawEmpty(ctx, width, height) {
 function drawGrid(ctx, margin, width, height, minY, maxY) {
   const chartHeight = height - margin.top - margin.bottom;
   const chartWidth = width - margin.left - margin.right;
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.strokeStyle = "rgba(235,244,255,0.1)";
   ctx.lineWidth = 1;
-  ctx.fillStyle = "#8e9691";
+  ctx.fillStyle = "#d5dfef";
   ctx.font = "11px IBM Plex Mono, monospace";
   ctx.textAlign = "right";
 
@@ -842,7 +878,7 @@ function drawGrid(ctx, margin, width, height, minY, maxY) {
 }
 
 function drawAxisLabels(ctx, width, height, xLabel, yLabel) {
-  ctx.fillStyle = "#cbd3ce";
+  ctx.fillStyle = "#e4edfa";
   ctx.font = "600 12px IBM Plex Mono, monospace";
   ctx.textAlign = "center";
   ctx.fillText(xLabel, width / 2, height - 14);
