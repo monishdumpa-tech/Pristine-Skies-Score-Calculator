@@ -8,7 +8,6 @@
   if (!hero || !content) return;
 
   let phase = "ready";
-  let touchY = null;
   let revealTimer;
   let finishTimer;
   const atLanding = (!location.hash || location.hash === "#top") && window.scrollY < 10;
@@ -35,8 +34,8 @@
     revealTimer = setTimeout(() => {
       document.body.classList.add("landing-content-visible");
       document.body.classList.remove("landing-view");
-    }, reducedMotion.matches ? 0 : 1000);
-    finishTimer = setTimeout(finishEntrance, reducedMotion.matches ? 250 : 2600);
+    }, reducedMotion.matches ? 1500 : 2400);
+    finishTimer = setTimeout(finishEntrance, reducedMotion.matches ? 1800 : 4000);
   }
 
   if (atLanding) {
@@ -49,25 +48,20 @@
     hero.hidden = true;
   }
 
-  // Consume only the opening gesture; scrolling is normal after the crossfade.
+  // Only Get Started opens the content; block scroll gestures until it finishes.
   window.addEventListener("wheel", (event) => {
     if (phase === "ready" || event.ctrlKey) return;
     event.preventDefault();
-    if (event.deltaY > 4) enterContent();
   }, { passive: false });
-  window.addEventListener("touchstart", (event) => {
-    touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
-  }, { passive: true });
   window.addEventListener("touchmove", (event) => {
-    if (phase === "ready" || touchY === null || event.touches.length !== 1) return;
+    if (phase === "ready" || event.touches.length !== 1) return;
     event.preventDefault();
-    if (touchY - event.touches[0].clientY > 24) enterContent();
   }, { passive: false });
   window.addEventListener("keydown", (event) => {
     if (phase === "ready" || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (["ArrowDown", "PageDown", " ", "Enter", "End"].includes(event.key)) {
+    if (event.target === hero.querySelector("button") && [" ", "Enter"].includes(event.key)) return;
+    if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", "Home", "End"].includes(event.key)) {
       event.preventDefault();
-      enterContent();
     }
   });
   hero.querySelector("button").addEventListener("click", enterContent);

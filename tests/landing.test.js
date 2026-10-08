@@ -40,7 +40,7 @@ function setup({ hash = "", reduced = false } = {}) {
   return { classes, handlers, timers, hero, content, header, heading, motion };
 }
 
-for (const trigger of ["wheel", "keyboard", "touch", "click"]) {
+for (const trigger of ["wheel", "keyboard", "touch"]) {
   const state = setup();
   assert.equal(state.content.inert, true);
   let prevented = false;
@@ -48,13 +48,14 @@ for (const trigger of ["wheel", "keyboard", "touch", "click"]) {
   if (trigger === "wheel") state.handlers.wheel({ deltaY: 30, preventDefault });
   if (trigger === "keyboard") state.handlers.keydown({ key: "PageDown", preventDefault });
   if (trigger === "touch") {
-    state.handlers.touchstart({ touches: [{ clientY: 300 }] });
     state.handlers.touchmove({ touches: [{ clientY: 240 }], preventDefault });
   }
-  if (trigger === "click") state.handlers["button:click"]();
-  assert.equal(state.classes.has("landing-departing"), true, trigger);
-  if (trigger !== "click") assert.equal(prevented, true);
-  assert.deepEqual([...state.timers.values()].map((timer) => timer.delay), [1000, 2600]);
+  assert.equal(state.classes.has("landing-departing"), false, `${trigger} must not activate entrance`);
+  assert.equal(prevented, true);
+  assert.equal(state.timers.size, 0);
+  state.handlers["button:click"]();
+  assert.equal(state.classes.has("landing-departing"), true);
+  assert.deepEqual([...state.timers.values()].map((timer) => timer.delay), [2400, 4000]);
   const callbacks = [...state.timers.values()];
   callbacks[0].callback();
   assert.equal(state.classes.has("landing-content-visible"), true);
@@ -70,7 +71,7 @@ for (const trigger of ["wheel", "keyboard", "touch", "click"]) {
 
 const reduced = setup({ reduced: true });
 reduced.handlers["button:click"]();
-assert.deepEqual([...reduced.timers.values()].map((timer) => timer.delay), [0, 250]);
+assert.deepEqual([...reduced.timers.values()].map((timer) => timer.delay), [1500, 1800]);
 const deepLink = setup({ hash: "#analysis" });
 assert.equal(deepLink.hero.hidden, true);
 assert.equal(deepLink.content.inert, false);
