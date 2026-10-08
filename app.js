@@ -44,7 +44,7 @@ const labels = {
 };
 
 const popularAircraft = [
-  presetAircraft("pristine-skies-prototype-1", "Pristine Skies Prototype 1", "Pristine Skies", "Advanced efficiency prototype", 200000, 11.327, 17.78, 50.9493, 3.95, 717.47775),
+  presetAircraft("pristine-skies-prototype-1", "Pristine Skies Mk I theoretical prototype", "Pristine Skies", "Advanced efficiency prototype", 200000, 11.327, 17.78, 50.9493, 3.95, 717.47775),
   presetAircraft("boeing-737-800", "Boeing 737-800", "Boeing", "Short/medium-haul narrowbody passenger", 174200, 9.423, 16.69, 39.47, 3.76, 850),
   presetAircraft("airbus-a320-ceo", "Airbus A320 (ceo)", "Airbus", "Short/medium-haul narrowbody passenger", 171961, 10.454, 17.34, 37.57, 3.95, 750),
   presetAircraft("airbus-a320neo", "Airbus A320neo", "Airbus", "Short/medium-haul fleet renewal narrowbody", 174165, 10.454, 17.34, 37.57, 3.95, 668),
