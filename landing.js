@@ -2,17 +2,83 @@
 
 (() => {
   const hero = document.querySelector(".hero-section");
+  const content = document.querySelector(".main-content");
+  const header = document.querySelector(".topbar");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (!hero || !("IntersectionObserver" in window)) return;
+  if (!hero || !content) return;
 
-  // The full navigation returns as the viewer reaches the content below the scene.
-  const navigationObserver = new IntersectionObserver(([entry]) => {
-    document.body.classList.toggle("landing-view", entry.isIntersecting);
-  }, { threshold: 0, rootMargin: "-110px 0px 0px 0px" });
-  if (hero.getBoundingClientRect().bottom > 110) document.body.classList.add("landing-view");
-  navigationObserver.observe(hero);
+  let phase = "ready";
+  let touchY = null;
+  let revealTimer;
+  let finishTimer;
+  const atLanding = (!location.hash || location.hash === "#top") && window.scrollY < 10;
+  document.body.classList.add("landing-enhanced");
 
-  if (reducedMotion.matches) return;
+  function finishEntrance() {
+    clearTimeout(revealTimer);
+    clearTimeout(finishTimer);
+    phase = "ready";
+    document.body.classList.remove("landing-view", "landing-departing", "landing-content-visible");
+    document.body.classList.add("landing-complete");
+    content.inert = false;
+    header.inert = false;
+    hero.hidden = true;
+    document.getElementById("introTitle").focus({ preventScroll: true });
+    window.dispatchEvent(new Event("resize"));
+  }
+
+  function enterContent() {
+    if (phase !== "waiting") return;
+    phase = "departing";
+    document.body.classList.add("landing-departing");
+    hero.querySelector("button").disabled = true;
+    revealTimer = setTimeout(() => {
+      document.body.classList.add("landing-content-visible");
+      document.body.classList.remove("landing-view");
+    }, reducedMotion.matches ? 0 : 1000);
+    finishTimer = setTimeout(finishEntrance, reducedMotion.matches ? 250 : 2600);
+  }
+
+  if (atLanding) {
+    phase = "waiting";
+    document.body.classList.add("landing-view");
+    content.inert = true;
+    header.inert = true;
+  } else {
+    document.body.classList.add("landing-complete");
+    hero.hidden = true;
+  }
+
+  // Consume only the opening gesture; scrolling is normal after the crossfade.
+  window.addEventListener("wheel", (event) => {
+    if (phase === "ready" || event.ctrlKey) return;
+    event.preventDefault();
+    if (event.deltaY > 4) enterContent();
+  }, { passive: false });
+  window.addEventListener("touchstart", (event) => {
+    touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
+  }, { passive: true });
+  window.addEventListener("touchmove", (event) => {
+    if (phase === "ready" || touchY === null || event.touches.length !== 1) return;
+    event.preventDefault();
+    if (touchY - event.touches[0].clientY > 24) enterContent();
+  }, { passive: false });
+  window.addEventListener("keydown", (event) => {
+    if (phase === "ready" || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (["ArrowDown", "PageDown", " ", "Enter", "End"].includes(event.key)) {
+      event.preventDefault();
+      enterContent();
+    }
+  });
+  hero.querySelector("button").addEventListener("click", enterContent);
+  window.addEventListener("hashchange", () => {
+    if (phase !== "ready" && location.hash && location.hash !== "#top") finishEntrance();
+  });
+  reducedMotion.addEventListener("change", (event) => {
+    if (event.matches && phase === "departing") finishEntrance();
+  });
+
+  if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
   const elements = document.querySelectorAll(
     ".landing-brand, .landing-manifesto, .flight-intro h2, " +
     ".flight-intro .section-kicker, .intro-detail, .mission-copy, .mission-grid article, " +
