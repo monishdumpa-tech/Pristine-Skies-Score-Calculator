@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flight visual regression preview</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../arctic-theme.css">
+  <style>
+    .preview-controls { position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 30; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .preview-controls button { padding: 8px 12px; }
+    output { font: 11px monospace; color: white; background: #182332; padding: 8px; }
+  </style>
+</head>
+<body class="landing-enhanced landing-view">
+  <section class="hero-section" data-flight-preview>
+    <div class="landing-brand"><h1>PRISTINE SKIES</h1></div>
+  </section>
+  <div class="preview-controls">
+    <button data-progress="0">Initial</button>
+    <button data-progress="0.18">Bank</button>
+    <button data-progress="0.38">Turn</button>
+    <button data-progress="0.65">Distance</button>
+    <button data-progress="1">Clouds</button>
+    <button id="play">Play</button>
+    <button id="pixels">Check pixels</button>
+    <output id="stats">Loading model</output>
+  </div>
+  <script type="module">
+    import { createFlightScene } from "../flight3d.js";
+    const scene = createFlightScene(document.querySelector(".hero-section"));
+    const stats = document.querySelector("#stats");
+    function checkPixels() {
+      const canvas = document.querySelector("canvas");
+      const gl = canvas.getContext("webgl2");
+      const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+      gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      let painted = 0, opaque = 0, checksum = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] > 0) painted++;
+        if (pixels[i + 3] > 250) opaque++;
+        checksum = (checksum + pixels[i] * (i % 127 + 1)) >>> 0;
+      }
+      stats.textContent = JSON.stringify({ progress: canvas.dataset.progress, depth: canvas.dataset.depth, painted, opaque, checksum, width: canvas.width, height: canvas.height });
+    }
+    document.querySelectorAll("[data-progress]").forEach(button => {
+      button.addEventListener("click", () => { scene.seek(Number(button.dataset.progress)); checkPixels(); });
+    });
+    document.querySelector("#play").addEventListener("click", () => scene.start(false));
+    document.querySelector("#pixels").addEventListener("click", checkPixels);
+    scene.seek(0);
+    checkPixels();
+  </script>
+</body>
+</html>

@@ -215,6 +215,10 @@ body.landing-view .topbar { opacity: 0; visibility: hidden; pointer-events: none
   pointer-events: none;
 }
 .landing-aircraft img { width: 100%; height: 100%; object-fit: contain; }
+.flight-scene { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; pointer-events: none; opacity: 0; transition: opacity 500ms ease; }
+.flight-3d-active .flight-scene { opacity: 1; }
+.flight-3d-active .landing-aircraft { animation: none !important; opacity: 0; transition: opacity 500ms ease; }
+.flight-3d-active::after { animation: none !important; }
 .landing-enter { display: none; }
 body.landing-enhanced:not(.landing-complete) { overflow: hidden; }
 .landing-enhanced .hero-section {
@@ -277,9 +281,7 @@ body.landing-enhanced:not(.landing-complete) { overflow: hidden; }
 .landing-complete .hero-section { display: none; }
 @keyframes aircraft-departure {
   0% { transform: translate(0, 0) scale(1) rotate(0); opacity: 1; filter: blur(0); }
-  18% { transform: translate(-3vw, -1vh) scale(1.03) rotate(-3deg); opacity: 1; filter: blur(0); }
-  60% { transform: translate(-42vw, -18vh) scale(0.7) rotate(-12deg); opacity: 1; filter: blur(0.4px); }
-  100% { transform: translate(-115vw, -48vh) scale(0.3) rotate(-16deg); opacity: 1; filter: blur(1.5px); }
+  100% { transform: translateY(-10vh) scale(0.06); opacity: 0; filter: blur(2px); }
 }
 @keyframes departure-clouds {
   0%, 50% { opacity: 0; }
@@ -287,7 +289,7 @@ body.landing-enhanced:not(.landing-complete) { overflow: hidden; }
 }
 @keyframes aircraft-departure-reduced {
   from { transform: translateX(0); }
-  to { transform: translateX(-115vw); }
+  to { transform: scale(0.06); opacity: 0; }
 }
 .flight-intro {
   width: min(var(--max), calc(100% - 48px));

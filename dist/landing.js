@@ -22,6 +22,7 @@
     content.inert = false;
     header.inert = false;
     hero.hidden = true;
+    try { window.PristineFlight3D?.dispose(); } catch (error) { console.warn("Flight cleanup failed.", error); }
     document.getElementById("introTitle").focus({ preventScroll: true });
     window.dispatchEvent(new Event("resize"));
   }
@@ -31,11 +32,18 @@
     phase = "departing";
     document.body.classList.add("landing-departing");
     hero.querySelector("button").disabled = true;
+    let flightStarted = false;
+    try { flightStarted = window.PristineFlight3D?.start(reducedMotion.matches) === true; }
+    catch (error) {
+      hero.classList.remove("flight-3d-active");
+      console.warn("3D flight unavailable; using depth fade.", error);
+    }
+    const revealDelay = flightStarted ? (reducedMotion.matches ? 3600 : 6500) : (reducedMotion.matches ? 1400 : 2600);
     revealTimer = setTimeout(() => {
       document.body.classList.add("landing-content-visible");
       document.body.classList.remove("landing-view");
-    }, reducedMotion.matches ? 1500 : 2400);
-    finishTimer = setTimeout(finishEntrance, reducedMotion.matches ? 1800 : 4000);
+    }, revealDelay);
+    finishTimer = setTimeout(finishEntrance, revealDelay + (reducedMotion.matches ? 300 : 1600));
   }
 
   if (atLanding) {
